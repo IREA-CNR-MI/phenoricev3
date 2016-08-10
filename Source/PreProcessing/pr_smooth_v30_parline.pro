@@ -15,9 +15,9 @@
 ;-
 FUNCTION pr_smooth_v30_parline, in_files, proc_opts, proc_year, mapscape
 
-  t1 = systime(1) & ddmm = strcompress(strmid(t1,4,6),/REMOVE_ALL) ; ddmm = date of processing run
+  t1 = systime(1) 
 
-  e = ENVI(/HEADLESS)
+  e = ENVI(/HEADLESS)   ; initialize envi
 
   ;- ------------------------------------------------------------------
   ; Open required rasters and get information from header files -------
@@ -50,30 +50,23 @@ FUNCTION pr_smooth_v30_parline, in_files, proc_opts, proc_year, mapscape
   ;- ------------------------------------------------------------------
 
   IF (FILE_TEST(in_files.Smooth_file) EQ 1) THEN FILE_DELETE, in_files.Smooth_file
-  out_smooth_file = ENVIRaster(URI= in_files.smooth_file, NROWS=in_vi.nrows, NCOLUMNS=in_vi.ncolumns, $
-    NBANDS=in_vi.nbands, DATA_TYPE = in_vi.data_type)
 
   ;- ------------------------------------------------------------------
   ;- Start Processing        ------------------------------------------
   ;- ------------------------------------------------------------------
 
-  ; Initialize tiling ---
-
-  smooth_dummy = intarr(nb, ncols) + 32767
-
   lines = indgen(in_vi.nrows)
-  print , 'PhenoRice VI-smoothing - pleas wait'
+  print , '--- PhenoRice VI-smoothing - pleas wait ! ---'
 
   ;- ----------------------------------------------------------------------------
-  ;-  Start cycling on pixels to do the smoothing - parallel implementation -
+  ;-  Start cycling on line blocks to do the smoothing - parallel implementation -
   ;-  http://daedalus.as.arizona.edu/wiki/ParallelIDL
   ;- ----------------------------------------------------------------------------
 
-  ;FOREACH pixel, lc_ok, ind_pixel DO BEGIN
 
-  nCPUs = !CPU.HW_NCPU-1      ; Find number of available cores
+  nCPUs = !CPU.HW_NCPU-1      ; Find number of available cores - set CPUs to N-1
   oBridge = objarr(nCPUs-1)
-  ;      output = intarr(nb, n_elements(lc_ok))
+  
   FOR i=0, nCPUs-1 DO BEGIN   ; cycle on CPUs
 
     range = [n_elements(lines)/nCPUs*i,n_elements(lines)/nCPUs*(i+1)-1]   ; Divide work among CPUs
@@ -117,15 +110,15 @@ FUNCTION pr_smooth_v30_parline, in_files, proc_opts, proc_year, mapscape
       oBridge[i]->SetVar, 'prev_y', prev_y
       oBridge[i]->SetVar, 'mapscape', mapscape
 
-      ; define the location of the smoothing function
+      ; define the location of the smoothing function and execute it on the different bridges
       oBridge[i]->Execute, ".r " + FILE_DIRNAME(ProgramRootDir())+PATH_SEP()+"Accessoires"+PATH_SEP()+"pr_smooth_pixel_v30_parline.pro"
       oBridge[i]->Execute, "results = pr_smooth_pixel_v30_parline(inlines, data_lc, data_VI, data_QA," $
         + "data_DOY, nb, ncols, win_dim_l, win_dim_r, doys_reg, years, proc_year, prev_y, mapscape)", /nowait
-        
-;        lines_ind, data_lc, data_VI, data_QA, data_DOY, nb, ncols, proc_opts.win_dim_l, proc_opts.win_dim_r, $
-;        doys_reg, years, proc_year, prev_y, mapscape
+
     ENDELSE
   ENDFOR
+  
+  ; Don't know what this means....
 
   notdone = 1
   WHILE notdone DO BEGIN
@@ -135,36 +128,42 @@ FUNCTION pr_smooth_v30_parline, in_files, proc_opts, proc_year, mapscape
     IF done EQ 0 THEN notdone=done
   ENDWHILE
 
+  ;- ------------------------------------------------------------------
+  ;- Reconcile results of the different cores
+  ;- ------------------------------------------------------------------
+
   FOR i=0, n_elements(oBridge)-1 DO BEGIN
-    results = [[[OBRIDGE[N_ELEMENTS(OBRIDGE)-1-I]->GETVAR('results')]],[[results]]]
+    results = [[[OBRIDGE[N_ELEMENTS(OBRIDGE)-1-i]->GETVAR('results')]],[[results]]]
     obj_destroy, oBridge[n_elements(oBridge)-1-i]
   ENDFOR
 
-  ;return, results
+  ;- ------------------------------------------------------------------
+  ;- Save the resulting matrix to the smoothed file
+  ;- ------------------------------------------------------------------
 
-;  smooth_line[*,lc_ok] = results
-;  out_smooth_file.SetData, results ; Put the output in the smoothed file line
-;  ;      smooth_line [*,pixel] = pr_smooth_pixel_v30_parpix(data_VI, data_QA,data_DOY, nb, proc_opts.win_dim_l, proc_opts.win_dim_r, doys_reg, check,  mapscape)  ; Launch smoothing
-;
-;  ;ENDFOREACH  ; end cycle on pixels not masked out by lc
-;
-;  ;ENDIF ; endif on at least one pixel not masked out
-;
-;  out_smooth_file.SetData, transpose(smooth_line), SUB_RECT=tileIterator.current_subrect ; Put the output in the smoothed file line
-
-  ;ENDFOREACH ; End of tiling
-
+  out_smooth_file = ENVIRaster(results, URI=in_files.smooth_file, interleave = 'bip')
   out_smooth_file.metadata.AddItem, 'Wavelength', doys_reg
   out_smooth_file.metadata.AddItem, 'Band Names', "VI_Smoothed" + "_" + strtrim(string(doys_reg),2)
   out_smooth_file.metadata.AddItem, 'time', times
+  out_smooth_file.metadata.AddItem, 'DATA_IGNORE_VALUE', 32767
   out_smooth_file.Save
-
+  
   return, "DONE ! "
   T2=systime(1)
   ;    print,"start processing:", t1
   ;    print,"End processing:",  t2
   print, "Smoothing time: " + strtrim(string(t2-t1))
   print, "done!"
+  
+  ;- ------------------------------------------------------------------
+  ;- Clean up
+  ;- ------------------------------------------------------------------
+
+  in_vi.Close
+  in_quality.Close
+  in_doy.Close
+  in_lc.Close
+  
   heap_gc
 
 END

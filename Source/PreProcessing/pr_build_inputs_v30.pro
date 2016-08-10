@@ -53,7 +53,7 @@
 ; -
 
 function pr_build_inputs_v30,or_ts_folder, in_ts_folder, in_bands_or, in_bands_derived, proc_year, out_filename, folder_suffixes_or, pr_opts, nodatas_or, resize, $
-  resize_bbox, min_criteria, max_criteria, MAPSCAPE ,META, out_files_list
+  resize_bbox, min_criteria, max_criteria, MAPSCAPE ,META, out_files_list, force_rebuild
   compile_opt idl2
 
   e = ENVI(/HEADLESS)
@@ -159,7 +159,7 @@ function pr_build_inputs_v30,or_ts_folder, in_ts_folder, in_bands_or, in_bands_d
     out_name = path_create([in_ts_folder+path_sep()+strtrim(proc_year, 2),in_bands_or[band]+'_ts_input_'+yeardoys_required[0]+'_'+yeardoys_required[-1]+'.dat'])
     out_files_list.(band) = out_name
 
-    if (FILE_TEST(out_name) EQ 0) then begin    ; Check if already existing. If no, then create it using the MODIStsp inputs + creating fillers
+    if ((FILE_TEST(out_name)) EQ 0 OR (force_rebuild EQ 1)) then begin    ; Check if already existing. If no, then create it using the MODIStsp inputs + creating fillers
 
       or_ts_folder_band = or_ts_folder+path_sep()+folder_suffixes_or[band]+path_sep()+in_bands_or[band]   ; Folder of the band
       pattern = '*'+in_bands_or[band]+'*.dat'     ; Set the patern to search for one of the inputs (e.g., NDVI )
@@ -184,7 +184,7 @@ function pr_build_inputs_v30,or_ts_folder, in_ts_folder, in_bands_or, in_bands_d
           out_name_filler = in_ts_folder+path_sep()+'ph_Fillers'+path_sep()+'AvgFiller'+'_'+ $
             in_bands_or[band]+'_'+yeardoy+'.dat'
 
-          if (FILE_TEST(out_name_filler) EQ 0) then begin   ; If required filler doesn't exist, then create it
+          if ((FILE_TEST(out_name_filler) EQ 0) OR (force_rebuild EQ 1)) then begin   ; If required filler doesn't exist, then create it
 
             doy = strmid(yeardoy, 2, /REVERSE_OFFSET)
             print, 'Computing Filler file for DOY'+string(doy)
@@ -268,7 +268,7 @@ function pr_build_inputs_v30,or_ts_folder, in_ts_folder, in_bands_or, in_bands_d
 
       result.Close
       out_rast.Close
-    endif else print, '# ---' + in_bands_or[band] + 'File already existing ---- '; End of check on file existence
+    endif else print, '# --- ' + in_bands_or[band] + ' File already existing ---- '; End of check on file existence
   endfor       ; End for cycle on band
 
   ;- --------------------------------------------------------- ;
@@ -277,9 +277,9 @@ function pr_build_inputs_v30,or_ts_folder, in_ts_folder, in_bands_or, in_bands_d
 
   out_files_list.Quality_file = path_create([in_ts_folder+path_sep()+strtrim(proc_year,2),"Quality"+'_ts_input_'+yeardoys_required[0]+'_'+yeardoys_required[-1]+'.dat'])
 
-  print, '# Building Quality File - '
+  print, '# --- Building Quality File ---- '
 
-  if (file_test(out_files_list.Quality_file) eq 0) then begin    ; Check if already existin
+  if ((file_test(out_files_list.Quality_file) eq 0) OR (force_rebuild EQ 1)) then begin    ; Check if already existin
 
     in_rely = e.OpenRaster(out_files_list.Rely_file)
     in_UI = e.OpenRaster(out_files_list.UI_file)
@@ -335,7 +335,7 @@ function pr_build_inputs_v30,or_ts_folder, in_ts_folder, in_bands_or, in_bands_d
     outname_smooth = smooth_dirname+path_sep()+strtrim(proc_year,2) + PATH_SEP()+file_basename(out_filename) + '_VI_smooth_'+strtrim(string(proc_year), 2)+'.dat'
 
 
-    if file_test(outname_smooth) eq 0 then begin  ; If multitemporal smoothed file doesn't exist, create it from single date files
+    if ((file_test(outname_smooth) eq 0) OR (force_rebuild EQ 1)) then begin  ; If multitemporal smoothed file doesn't exist, create it from single date files
 
       FILE_MKDIR,smooth_dirname
       in_smoothfiles_required = STRARR(N_ELEMENTS(yeardoys_required))
@@ -378,7 +378,7 @@ function pr_build_inputs_v30,or_ts_folder, in_ts_folder, in_bands_or, in_bands_d
 
       endforeach
     
-    endif else print, '# ---' + in_bands_or[band] + 'Smoothe File already existing ---- '; End of check on file existence
+    endif else print, '# ---' + in_bands_or[band] + ' Smoothed File already existing ---- '; End of check on file existence
   
   endif
 

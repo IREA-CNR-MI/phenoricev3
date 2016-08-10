@@ -1,0 +1,15 @@
+ENVI
+description = {
+/home/lb/Source/phenorice/data/IT_Clipped/Original_MODIS//VI_16Days_250m/QA/MOD13Q1_QA_2015_193.dat}
+samples = 258
+lines   = 197
+bands   = 1
+header offset = 0
+file type = ENVI Standard
+data type = 1
+interleave = bsq
+byte order = 0
+map info = {Sinusoidal, 1, 1, 645626.269746, 5053583.44977, 231.656358, 231.656358}
+coordinate system string = {PROJCS["Sinusoidal",GEOGCS["GCS_unnamed ellipse",DATUM["D_unknown",SPHEROID["Unknown",6371007.181,0]],PRIMEM["Greenwich",0],UNIT["Degree",0.017453292519943295]],PROJECTION["Sinusoidal"],PARAMETER["central_meridian",0],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["Meter",1]]}
+band names = {
+Band 1}
