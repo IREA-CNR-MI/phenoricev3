@@ -16,20 +16,23 @@
 ;-
 
 
-compile_opt idl2
+COMPILE_OPT idl2
 t1 = systime(1) & ddmm = strcompress(strmid(t1,4,6),/REMOVE_ALL) ; ddmm = date of processing run
 
-; Flags for particular processing
+;- --------------------------------------------------------- ;
+; Set Flags for particular processing
+;- --------------------------------------------------------- ;
 
-mapscape = 0      ; Specify to use "mapscape" input files --> Leads to changes in NODATA values and to not trying to generate
-                  ; the smoothed file !!!
-                  
+mapscape = 0      ; Specify to use "mapscape" input files --> Leads to changes in NODATA values and generate smoothed file from MAPSCAPE data!!!
 
 test_data = 1     ; Leads to using default input data and parameters (for testing purposes)
-test_folder = 'IT_Full'
-old_approach = 1  ; Leads to using the "old" (e.g., July 2016) computation algorithms so to check differences with v3.0
+test_folder = 'IT_Clipped'   ; testing data folder
+method = 'parallel-line'   ; Processing method ("normal" (slow),  "parallel-pixel" or "parallel-line" (faster - difficult to debug ! ))
 
-;ENVI
+force_rebuild  = 0    ; Flag. if set to 1 the smoothed file is rebuilt (overwritten) even if already existing
+force_resmooth = 1    ; Flag. if set to 1 the smoothed file is rebuilt (overwritten) even if already existing
+
+; old_approach = 1  ; Leads to using the "old" (e.g., July 2016) computation algorithms so to check differences with v3.0
 
 ; TODO: substitute with automatic resize of imagery on the basis of an input shape/raster file.
 resize = 0
@@ -38,7 +41,7 @@ resize_bbox = [538,2028,1882,2692]
 ;---------- ----
 
 ;- --------------------------------------------------------- ;
-;-  Set general variables -----------------------------------
+; Set general variables ------------------------------ ;
 ;- --------------------------------------------------------- ;
 
 in_bands_or = ['EVI','NDFI','b3_Blue','Rely','UI','DOY','LST']  ; Codenames of the input bands (inherited from the MODIStsp R package (https://github.com/lbusett/MODIStsp)
@@ -52,13 +55,13 @@ folder_suffixes_or = ['VI_16Days_250m','VI_16Days_250m','VI_16Days_250m','VI_16D
 
 nodatas_or = [32767,32767,32767,32767,255,255,32767,32767]
 
-if mapscape EQ 1 then  nodatas_or = [32767,32767,32767,32767,255,255,32767,-1]      ; If mapscape inputs are used, NODATA values for Surf_Temp are different ! To be changed in mapscape
+IF mapscape EQ 1 THEN  nodatas_or = [32767,32767,32767,32767,255,255,32767,-1]      ; If mapscape inputs are used, NODATA values for Surf_Temp are different ! To be changed in mapscape
 
-;- --------------------------------------------------------- ;
-;-  Set Input / output files and folders (retrieve from GUI selection)
-;- --------------------------------------------------------- ;
+IF test_data EQ 0 THEN BEGIN  ;
 
-if test_data EQ 0 then begin  ; IF not run on test_data, then open the GUI to select parameters
+  ;- --------------------------------------------------------------- ;
+  ;-  IF not run on test_data, then open the GUI to select parameters
+  ;- --------------------------------------------------------------- ;
 
   ; TODO: Create a IDL Widget GUI
   R_GUI_function_path = ProgramRootDir()+'Source'+path_sep()+'phenorice'+path_sep()+'source'+path_sep()+'Accessoires'+path_sep()+'Phenorice_GUI.R'
@@ -69,24 +72,24 @@ if test_data EQ 0 then begin  ; IF not run on test_data, then open the GUI to se
   ;---------- ----
   ; Read the input options from the txt file saved by Phenorice_GUI (TO be removed after switching to IDL GUI
   ;---------- ----
-  if out_folder EQ '' OR out_folder EQ 'ALS'then begin
+  IF out_folder EQ '' OR out_folder EQ 'ALS'THEN BEGIN
     print, 'User selected to quit'
     stop
-  endif
+  ENDIF
   options_file = out_folder+'/phenorice_options.txt'
   in_file = options_file
   in_opts_arr = ''
   line = ''
 
   openr, lun, in_file, /GET_LUN
-  while not eof(lun) do begin
+  WHILE NOT eof(lun) DO BEGIN
     readf, lun, line
     in_opts_arr = [in_opts_arr, line]
-  endwhile
+  ENDWHILE
 
   free_lun, lun
-  in_opts_arr[where(in_opts_arr eq 'On')] = 1     ; Convert "Yes/No" to 0/1
-  in_opts_arr[where(in_opts_arr eq 'Off')] = 0
+  in_opts_arr[where(in_opts_arr EQ 'On')] = 1     ; Convert "Yes/No" to 0/1
+  in_opts_arr[where(in_opts_arr EQ 'Off')] = 0
 
   or_ts_folder = in_opts_arr[1] ; Input folder where times series (Single date files) created with MODIStso are stored - (NOT required if input time series of the considered year are already available !)
 
@@ -121,10 +124,10 @@ if test_data EQ 0 then begin  ; IF not run on test_data, then open the GUI to se
   ; otherwise I will count twice the same "season", one for "previous" and one for "current " year
 
   order = sort([stard_doy_seas1,stard_doy_seas2,stard_doy_seas3,stard_doy_seas4])
-  if abs(max (order - [0,1,2,3])) NE 0  then begin
+  IF abs(max (order - [0,1,2,3])) NE 0  THEN BEGIN
     mes = DIALOG_MESSAGE('Error in ordering of seasons doys - Please Check')
     stop
-  endif
+  ENDIF
 
   ; Check for overlapping between ranges
 
@@ -132,23 +135,23 @@ if test_data EQ 0 then begin  ; IF not run on test_data, then open the GUI to se
   Inters_2_3 = SetIntersection(range_seas_2, range_seas_3)
   Inters_3_4 = SetIntersection(range_seas_3, range_seas_4)
 
-  if (min([Inters_1_2,Inters_2_3,Inters_3_4]) NE -999) OR (max([Inters_1_2,Inters_2_3,Inters_3_4]) NE -999) then begin
+  IF (min([Inters_1_2,Inters_2_3,Inters_3_4]) NE -999) OR (max([Inters_1_2,Inters_2_3,Inters_3_4]) NE -999) THEN BEGIN
     mes =DIALOG_MESSAGE('Selected periods are overlapping - please correct')
     stop
-  endif
+  ENDIF
 
-  if (stard_doy_seas1 LT 0) then begin
+  IF (stard_doy_seas1 LT 0) THEN BEGIN
     range_seas1_cor = 365+range_seas_1
-    if (total(sel_seasons[0:1]) EQ 2)  then Inters_1_2_cor= SetIntersection(range_seas1_cor, range_seas_2) else inters_1_2_cor = -999
-    if ((sel_seasons [0] + sel_seasons[2] )EQ 2) then Inters_1_3_cor = SetIntersection(range_seas1_cor, range_seas_3) else inters_1_3_cor = -999
-    if ((sel_seasons [0] + sel_seasons[3] )EQ 2) then Inters_1_4_cor = SetIntersection(range_seas1_cor, range_seas_4) else inters_1_4_cor = -999
+    IF (total(sel_seasons[0:1]) EQ 2)  THEN Inters_1_2_cor= SetIntersection(range_seas1_cor, range_seas_2) ELSE inters_1_2_cor = -999
+    IF ((sel_seasons [0] + sel_seasons[2] )EQ 2) THEN Inters_1_3_cor = SetIntersection(range_seas1_cor, range_seas_3) ELSE inters_1_3_cor = -999
+    IF ((sel_seasons [0] + sel_seasons[3] )EQ 2) THEN Inters_1_4_cor = SetIntersection(range_seas1_cor, range_seas_4) ELSE inters_1_4_cor = -999
 
-    if  (min([Inters_1_2_cor,Inters_1_3_cor,Inters_1_4_cor]) NE -999) OR (max([Inters_1_2_cor,Inters_1_3_cor,Inters_1_4_cor]) NE -999) then begin
+    IF  (min([Inters_1_2_cor,Inters_1_3_cor,Inters_1_4_cor]) NE -999) OR (max([Inters_1_2_cor,Inters_1_3_cor,Inters_1_4_cor]) NE -999) THEN BEGIN
       mes =DIALOG_MESSAGE('Selected periods are overlapping - Quarter One includes maxima of previous year in a period potentially included in other quarters for current year !!! Please correct !')
       stop
-    endif
+    ENDIF
 
-  endif
+  ENDIF
 
   proc_opts = { $
     in_VI: in_bands_or[0], $     ; Name of the index
@@ -162,7 +165,7 @@ if test_data EQ 0 then begin  ; IF not run on test_data, then open the GUI to se
     win_dim_r : 3 ,$
     cloud_clear : 500 ,$      ; -> Blu band thresholds for cloud level identification :
     cloud_full  : 1800, $
-    method : "parallel_line" $
+    method : method $
   }
 
   ; Criteria for average VI check
@@ -199,15 +202,16 @@ if test_data EQ 0 then begin  ; IF not run on test_data, then open the GUI to se
     LST_thresh: fix(in_opts_arr[50] )     $; Threshold for LST (in °C)
   }
 
-endif else begin   ; On test run, set parameters to default values
+ENDIF ELSE BEGIN   ; On test run, set parameters to default values
 
-  or_ts_folder = ProgramRootDir() + 'data' + path_sep() + test_folder + path_sep() + 'Original_MODIS'; Input folder where times series (Single date files) created with MODIStso are stored - (NOT required if input time series of the considered year are already available !)
+  or_ts_folder = path_create([FILE_DIRNAME(ProgramRootDir()), 'test_data', test_folder,'Original_MODIS']) ; Input folder where times series (Single date files) created with MODIStso are stored - (NOT required if input time series of the considered year are already available !)
+;/home/lb/Source/phenoricev3/test_data/IT_Clipped/
+  in_ts_folder = path_create([FILE_DIRNAME(ProgramRootDir()), 'test_data', test_folder, 'inputs'])   ; Folder where time series to be used as input for phenorice will be stored -->  Intermediate multiband files
 
-  in_ts_folder = ProgramRootDir() + 'data' + path_sep() + test_folder + path_sep() + 'inputs'   ; Folder where time series to be used as input for phenorice will be stored -->  Intermediate multiband files
+  in_lc_file = path_create([FILE_DIRNAME(ProgramRootDir()), 'test_data', test_folder,'Ancillary', 'Land_Cover', 'Mask.dat'])         ; Name of the input "land cover masking" file. Only pixels at "1" in this file are processed
 
-  in_lc_file = ProgramRootDir() + 'data' + path_sep() + test_folder + path_sep() + 'Ancillary' + path_sep() + 'Land_Cover' + path_sep() + 'Mask.dat'         ; Name of the input "land cover masking" file. Only pixels at "1" in this file are processed
-
-  out_filename = ProgramRootDir() + 'data/Outputs'; Out file name (Actually, a prefixc to which indication about processing year is appended
+  out_filename = path_create([FILE_DIRNAME(ProgramRootDir()), 'test_data', 'Outputs','Test_Output']); Out file name (Actually, a prefixc to which indication about processing year is appended
+  FILE_MKDIR,FILE_DIRNAME(out_filename)
 
   start_year = 2015     &         end_year = 2015   ; Start and end year for the analysis
 
@@ -223,7 +227,7 @@ endif else begin   ; On test run, set parameters to default values
     win_dim_r : 3 ,$
     cloud_clear : 500 ,$      ; -> Blu band thresholds for cloud level identification :
     cloud_full  : 1800, $
-    method : "parallel_line" $
+    method : method $
   }
 
   ; Criteria for average VI check
@@ -258,7 +262,7 @@ endif else begin   ; On test run, set parameters to default values
     LST: 1   ,$           ; Check if min occurs in a period with LST above a given threshold ? ( 1 = Yes)
     LST_thresh: 15     $; Threshold for LST (in °C)
   }
-endelse
+ENDELSE
 
 ;-----------------------------------------------------------------------------------------------------
 ; Start the processing --> Call the pr_process routine with a cycle on years and selected parameters
@@ -267,7 +271,7 @@ endelse
 ;- --------------------------------------------------------- ;
 ;-  Start Cycling on years
 ;- --------------------------------------------------------- ;
-for proc_year = end_year, start_year, -1 do begin
+FOR proc_year = end_year, start_year, -1 DO BEGIN
 
   t1 = systime(2)   ; Get starting time
   print, "# ############################################ #"
@@ -281,14 +285,14 @@ for proc_year = end_year, start_year, -1 do begin
   smooth_dirname = in_ts_folder+path_sep()+strtrim(proc_year,2)+path_sep()+'VI_Smoothed'
   smooth_file = smooth_dirname+path_sep()+'VI_smooth_'+strtrim(string(proc_year), 2)+'.dat'
   FILE_MKDIR, smooth_dirname
-  
+
   out_files_list = {EVI_file: "", NDFI_file:"", Blue_file :"", $
     Rely_file:"", UI_file: "", DOY_file: "", LST_file:"", $
     Quality_file: "", Smooth_file : smooth_file , LC_File : in_lc_file}    ; Initialize array of output file names
-    
+
 
   in_files = pr_build_inputs_v30(or_ts_folder, in_ts_folder, in_bands_or, in_bands_derived , proc_year, out_filename,folder_suffixes_or, proc_opts, nodatas_or,$
-    resize, resize_bbox, min_criteria, max_criteria, mapscape, META, out_files_list)
+    resize, resize_bbox, min_criteria, max_criteria, mapscape, META, out_files_list, force_rebuild)
 
 
   ;- ---------------------------------------------------------- ;
@@ -301,50 +305,52 @@ for proc_year = end_year, start_year, -1 do begin
   print, "# SMOOTHING VI DATA
   print, "# ############################################ #"
 
-  ;if (FILE_TEST(in_files.Smooth_file) EQ 0) then begin
+  IF ((FILE_TEST(in_files.Smooth_file) EQ 0) OR (force_resmooth EQ 1)) THEN BEGIN
 
-  if (proc_opts.method EQ "normal") then smooth_file = pr_smooth_v30(in_files, proc_opts, proc_year, mapscape)
-  
-  if (proc_opts.method EQ "parallel_pixel") then smooth_file = pr_smooth_v30_parpix(in_files, proc_opts, proc_year, mapscape)
-  
-  if (proc_opts.method EQ "parallel_line") then smooth_file = pr_smooth_v30_parline(in_files, proc_opts, proc_year, mapscape)
-      
-    T2=systime(1)
-;    print,"start processing:", t1
-;    print,"End processing:",  t2
-    print, T2-t1, ' Seconds'
-    print, "done!"
-    heap_gc
+    IF (proc_opts.method EQ "normal") THEN smooth_file = pr_smooth_v30(in_files, proc_opts, proc_year, mapscape)
+
+    IF (proc_opts.method EQ "parallel-pixel") THEN smooth_file = pr_smooth_v30_parpix(in_files, proc_opts, proc_year, mapscape)
+
+    IF (proc_opts.method EQ "parallel-line") THEN smooth_file = pr_smooth_v30_parline(in_files, proc_opts, proc_year, mapscape)
+
+  ENDIF
+
+  T2=systime(1)
+  ;    print,"start processing:", t1
+  ;    print,"End processing:",  t2
+  print, T2-t1, ' Seconds'
+  print, "done!"
+  heap_gc
 
   ;endif else print ,"Smoothed VI file already esisting"
 
   ;- ---------------------------------------------------------- ;
   ;-  Launch processing - pr_process v30 function
   ;- ---------------------------------------------------------- ;
-  
+
   print, "# ############################################ #"
   print, "# PERFORMING PHENOLOGICAL ANALYSIS
   print, "# ############################################ #"
 
   print, "# Main PhenoRice processing"
-;  outrast_folder = path_create([out_folder, strtrim(proc_year,2),"raster"])  ; output folder for images
-;  outlog_folder = path_create([out_folder, "log"])                            ; output folder for log
-;  out_logfile = path_create([outlog_folder,(out_file_prefix + "_Log_file.txt")])  ; output log file
-;
-;  out_proc = pr_process_v30(in_files , out_filename , pr_opts , $
-;    avg_criteria,max_criteria, min_criteria, out_logfile , proc_year , note, resize, $
-;    start_x, end_x,start_y, end_y, mapscape)
-;
-;  T2=systime(2)
-;  print,"start processing:", T1
-;  print,"start processing:", T2
-;  print, t2-t1
-;  print, "done!"
+  ;  outrast_folder = path_create([out_folder, strtrim(proc_year,2),"raster"])  ; output folder for images
+  ;  outlog_folder = path_create([out_folder, "log"])                            ; output folder for log
+  ;  out_logfile = path_create([outlog_folder,(out_file_prefix + "_Log_file.txt")])  ; output log file
+  ;
+  ;  out_proc = pr_process_v30(in_files , out_filename , pr_opts , $
+  ;    avg_criteria,max_criteria, min_criteria, out_logfile , proc_year , note, resize, $
+  ;    start_x, end_x,start_y, end_y, mapscape)
+  ;
+  ;  T2=systime(2)
+  ;  print,"start processing:", T1
+  ;  print,"start processing:", T2
+  ;  print, t2-t1
+  ;  print, "done!"
   heap_gc
-endfor  ; End Cycle on years
+ENDFOR  ; End Cycle on years
 
 ;- --------------------------------------------------------- ;
 ;-  Launch postprocessing (TBD)
 ;- --------------------------------------------------------- ;
 
-end
+END
