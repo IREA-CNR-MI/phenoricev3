@@ -29,7 +29,7 @@
 ;
 ;License GPL(>2)
 ;-
-pro pr_signal_analysis_v30, smooth_pix, NDII_pix, NDFI_pix, nb, lc_ok, $
+pro pr_signal_analysis_v22, smooth_pix, NDII_pix, NDFI_pix, nb, lc_ok, $
    out_RICE_MAX_ARRAY, out_RICE_MIN_ARRAY, der_neg_pix, der_pos_pix, win_dim_l, win_dim_r
   
    

@@ -21,7 +21,7 @@
 ;    in_bands_derived: Codenames used to create filenames of derived bandnames useful for processing
 ;    proc_year: Processing year
 ;    out_file_prefix: pre
-;    pr_opts: Structure of general procesing options defined in pr_main
+;    opts: Structure of general procesing options defined in pr_main
 ;
 ; :Params:
 ;    or_ts_folder Main folder containing the single-band files created by MODIStsp (Includes both the VI_250m and the LST subfolders)
@@ -31,13 +31,13 @@
 ;    proc_year Processing year
 ;    out_filename Name of output file
 ;    folder_suffixes_or Suffixes specifying in which subfolder of or_ts_folders are the different "parameters (e.g., EVI is in  "VI_16Days_250m
-;    pr_opts processing options (structure) - needed to determine the total number of bands required for the inputs
+;    opts processing options (structure) - needed to determine the total number of bands required for the inputs
 ;    nodatas_or NODATA values of original MODIStsp single date images
-;    resize flag - if = 1 a resize is performed according to "resize_bbox) ( YET TO BE IMPLEMENTED)
-;    resize_bbox - contains xmin,xmax, ymin, ymax coordinates to be used for the resize (if required according to resize flag
+;    opts.resize flag - if = 1 a opts.resize is performed according to "opts.opts.resize_bbox) ( YET TO BE IMPLEMENTED)
+;    opts.opts.resize_bbox - contains xmin,xmax, ymin, ymax coordinates to be used for the opts.resize (if required according to opts.resize flag
 ;    min_criteria - structure containing the criteria to be used on mins and their values (see pr_main_v30_gui.pro)
 ;    max_criteria  - structure containing the criteria to be used on maxs and their values (see pr_main_v30_gui.pro)
-;    MAPSCAPE - flag. If = 1, then the MAPSCAPE smoothed data is used for processing instead than trying to create a smoothed file using pr_smooth_v30
+;    opts.mapscape - flag. If = 1, then the opts.mapscape smoothed data is used for processing instead than trying to create a smoothed file using pr_smooth_v30
 ;    META - flag. If = 1, then ENVI META files are created instead than "physical" files
 ;
 ; RETURNS:
@@ -52,23 +52,24 @@
 ; ;License GPL(>2)
 ; -
 
-function pr_build_inputs_v30,or_ts_folder, in_ts_folder, in_bands_or, in_bands_derived, proc_year, out_filename, folder_suffixes_or, pr_opts, nodatas_or, resize, $
-  resize_bbox, min_criteria, max_criteria, MAPSCAPE ,META, out_files_list, force_rebuild
+function pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_derived, out_filename, folder_suffixes_or, opts, nodatas_or, $
+      META, out_files_list, force_rebuild
   compile_opt idl2
 
   e = ENVI(/HEADLESS)
-
+  proc_year = opts.proc_year
+  
   ;- --------------------------------------------------------- ;
   ;-  Set processing parameters and general variables
   ;- --------------------------------------------------------- ;
-  cloud_clear = pr_opts.cloud_clear
-  cloud_full = pr_opts.cloud_full
+  cloud_clear = opts.cloud_clear
+  cloud_full = opts.cloud_full
 
-  vect_mins_pos = fix([pr_opts.doy_1Q[0],pr_opts.doy_2Q[0],pr_opts.doy_3Q[0],pr_opts.doy_4Q[0]])   ; Find the "minimum" doy to be considered for searching a Sowing Date
-  min_pos = min(vect_mins_pos[where(pr_opts.SEL_SEASONS EQ 1)])
+  vect_mins_pos = fix([opts.doy_1Q[0],opts.doy_2Q[0],opts.doy_3Q[0],opts.doy_4Q[0]])   ; Find the "minimum" doy to be considered for searching a Sowing Date
+  min_pos = min(vect_mins_pos[where(opts.SEL_SEASONS EQ 1)])
 
-  vect_maxs_pos = fix([pr_opts.doy_1Q[1],pr_opts.doy_2Q[1],pr_opts.doy_3Q[1],pr_opts.doy_4Q[1]])  ; Find the "maximum" doy to be considered for searching a Sowing Date
-  max_pos = max(vect_maxs_pos[where(pr_opts.SEL_SEASONS EQ 1)])
+  vect_maxs_pos = fix([opts.doy_1Q[1],opts.doy_2Q[1],opts.doy_3Q[1],opts.doy_4Q[1]])  ; Find the "maximum" doy to be considered for searching a Sowing Date
+  max_pos = max(vect_maxs_pos[where(opts.SEL_SEASONS EQ 1)])
 
   ;- --------------------------------------------------------- ;
   ; On the basis of above identified ranges, define the bands required for the time series to be used for running Phenorice. To do that:
@@ -76,8 +77,8 @@ function pr_build_inputs_v30,or_ts_folder, in_ts_folder, in_bands_or, in_bands_d
   ;   For the maximum, compute max_pos + number of periods on which decrease is checked (if check decrease = 1) +  half length of the smoothing window + 1
   ;- --------------------------------------------------------- ;
 
-  min_doy = min_pos - 8*min_criteria.max_aft_win[1] - 8*pr_opts.WIN_DIM_L
-  max_doy = max_pos + 8*max_criteria.DECREASE_WIN*max_criteria.decrease + 8*pr_opts.WIN_DIM_R + 1
+  min_doy = min_pos - 8*opts.max_aft_win[1] - 8*opts.WIN_DIM_L
+  max_doy = max_pos + 8*opts.DECREASE_WIN*opts.decrease + 8*opts.WIN_DIM_R + 1
 
   ; if min_doy < 0 it means that min_doy is on previous year, so recompute it as the complement to 365 and reset min_year to min_year -1
   if (min_doy LT 0 ) then begin
@@ -329,7 +330,7 @@ function pr_build_inputs_v30,or_ts_folder, in_ts_folder, in_bands_or, in_bands_d
   endif else print, '# --- Quality File already existing ---- '
 
 
-  if MAPSCAPE EQ 1 then begin   ; If mapscape is 1 then look forexistance of smoothed single bands and build the smoothed file
+  if opts.mapscape EQ 1 then begin   ; If opts.mapscape is 1 then look forexistance of smoothed single bands and build the smoothed file
 
     smooth_dirname = or_ts_folder+path_sep()+'VI_Smoothed'
     outname_smooth = smooth_dirname+path_sep()+strtrim(proc_year,2) + PATH_SEP()+file_basename(out_filename) + '_VI_smooth_'+strtrim(string(proc_year), 2)+'.dat'

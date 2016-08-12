@@ -24,13 +24,14 @@ t1 = systime(1) & ddmm = strcompress(strmid(t1,4,6),/REMOVE_ALL) ; ddmm = date o
 ;- --------------------------------------------------------- ;
 
 mapscape = 0      ; Specify to use "mapscape" input files --> Leads to changes in NODATA values and generate smoothed file from MAPSCAPE data!!!
+overwrite_out = 1 ; If = 0, then trying to overwrite existing outputs is NOT POSSIBLE
 
 test_data = 1     ; Leads to using default input data and parameters (for testing purposes)
 test_folder = 'IT_Clipped'   ; testing data folder
 method = 'parallel-line'   ; Processing method ("normal" (slow),  "parallel-pixel" or "parallel-line" (faster - difficult to debug ! ))
 
 force_rebuild  = 0    ; Flag. if set to 1 the smoothed file is rebuilt (overwritten) even if already existing
-force_resmooth = 1    ; Flag. if set to 1 the smoothed file is rebuilt (overwritten) even if already existing
+force_resmooth = 0    ; Flag. if set to 1 the smoothed file is rebuilt (overwritten) even if already existing
 
 ; old_approach = 1  ; Leads to using the "old" (e.g., July 2016) computation algorithms so to check differences with v3.0
 
@@ -153,7 +154,11 @@ IF test_data EQ 0 THEN BEGIN  ;
 
   ENDIF
 
-  proc_opts = { $
+; set-up processing options retrieving data from GUI
+
+  opts = { $
+    
+    ;---- General Options
     in_VI: in_bands_or[0], $     ; Name of the index
     in_flood_ind : in_bands_or[1], $      ; Name of NDVI Index
     sel_seasons : sel_seasons,$
@@ -165,28 +170,28 @@ IF test_data EQ 0 THEN BEGIN  ;
     win_dim_r : 3 ,$
     cloud_clear : 500 ,$      ; -> Blu band thresholds for cloud level identification :
     cloud_full  : 1800, $
-    method : method $
-  }
-
-  ; Criteria for average VI check
-  avg_criteria = { $
+    method : method, $
+    proc_year: 0000, $
+    ovr :overwrite_out, $
+    mapscape: mapscape, $
+    resize: resize, $
+    resize_bbox: resize_bbox, $
+    force_resmooth: force_resmooth, $
+    
+    ;---- Criteria on Average
     avg_check : fix(in_opts_arr[35]) ,$   ; Check if average VI Above threshold ? (1 = Yes)
-    avg_thresh : fix(in_opts_arr[36]) $; Threshold to be used on average
-  }
-
-  ; Criteri for maximum detection
-  max_criteria = { $
+    avg_thresh : fix(in_opts_arr[36]), $; Threshold to be used on average
+    
+    ;---- Criteria on Maximums
     derivs: 1, $           ; Check derivatives on left/right side of max ? ( 1 = Yes)
     derivs_opt: [5,3],$    ; Check for at least 3 derivs on 5 on both sides
     max_value: fix(in_opts_arr[37]) ,$        ; Check if max above threshold ? ( 1 = Yes)
     vi_tr_max : fix(in_opts_arr[38]) ,$    ; Threshold for max - if max below this value, it is discarded
     decrease: fix(in_opts_arr[41])      ,$    ; Check if max decreases below a threshold on a window on th right side ? ( 1 = Yes)
     decrease_win: fix(in_opts_arr[40])/8  ,$    ; Dimension of the decrease window
-    decrease_perc: float(in_opts_arr[39]) $; Percentage decrease to be checked
-  }
-
-  ; Set the criteria for minimum detection
-  min_criteria = { $
+    decrease_perc: float(in_opts_arr[39]), $; Percentage decrease to be checked
+        
+    ;---- Criteria on Minimums
     min_value: fix(in_opts_arr[42]), $     ; Check if min below threshold ? ( 1 = Yes)
     vi_tr_min : fix(in_opts_arr[43]) ,$   ; max threshold for legal min (If min above this threshold it is discarded)
     growth : 1      ,$    ; Check for positive derivatives after min ? ( 1 = Yes)
@@ -199,23 +204,28 @@ IF test_data EQ 0 THEN BEGIN  ;
     max_aft_win : [fix(in_opts_arr[47])/8,fix(in_opts_arr[48])/8],$;  First index: min number of compositing periods between min and max;
     ;  Second index: max number of compositing periods between min and max;
     LST: fix(in_opts_arr[49])   ,$           ; Check if min occurs in a period with LST above a given threshold ? ( 1 = Yes)
-    LST_thresh: fix(in_opts_arr[50] )     $; Threshold for LST (in °C)
+    LST_thresh: fix(in_opts_arr[50] ),     $; Threshold for LST (in °C)
+    
+    ;---- Selected outputs
+    n_rice: 1, $ 
+    sow:1, $
+    flow:1, $
+    eos:0,$
+    integral:0 $
+    
   }
 
 ENDIF ELSE BEGIN   ; On test run, set parameters to default values
 
   or_ts_folder = path_create([FILE_DIRNAME(ProgramRootDir()), 'test_data', test_folder,'Original_MODIS']) ; Input folder where times series (Single date files) created with MODIStso are stored - (NOT required if input time series of the considered year are already available !)
-;/home/lb/Source/phenoricev3/test_data/IT_Clipped/
   in_ts_folder = path_create([FILE_DIRNAME(ProgramRootDir()), 'test_data', test_folder, 'inputs'])   ; Folder where time series to be used as input for phenorice will be stored -->  Intermediate multiband files
-
   in_lc_file = path_create([FILE_DIRNAME(ProgramRootDir()), 'test_data', test_folder,'Ancillary', 'Land_Cover', 'Mask.dat'])         ; Name of the input "land cover masking" file. Only pixels at "1" in this file are processed
-
-  out_filename = path_create([FILE_DIRNAME(ProgramRootDir()), 'test_data', 'Outputs','Test_Output']); Out file name (Actually, a prefixc to which indication about processing year is appended
-  FILE_MKDIR,FILE_DIRNAME(out_filename)
-
   start_year = 2015     &         end_year = 2015   ; Start and end year for the analysis
 
-  proc_opts = { $
+; set default options
+
+  opts = { $
+    ;---- General Options
     in_VI: "EVI", $     ; Name of the index
     in_flood_ind : "NDFI", $      ; Name of NDVI Index
     sel_seasons : [1,1,1,0],$
@@ -227,28 +237,28 @@ ENDIF ELSE BEGIN   ; On test run, set parameters to default values
     win_dim_r : 3 ,$
     cloud_clear : 500 ,$      ; -> Blu band thresholds for cloud level identification :
     cloud_full  : 1800, $
-    method : method $
-  }
-
-  ; Criteria for average VI check
-  avg_criteria = { $
+    method : method ,$
+    proc_year: 0000, $
+    ovr :overwrite_out, $
+    mapscape: mapscape, $
+    resize: resize, $
+    resize_bbox: resize_bbox, $
+    force_resmooth: force_resmooth, $
+    
+    ;---- Criteria on Average
     avg_check : 1 ,$   ; Check if average VI Above threshold ? (1 = Yes)
-    avg_thresh : 5000 $; Threshold to be used on average
-  }
-
-  ; Criteri for maximum detection
-  max_criteria = { $
+    avg_thresh : 5000, $; Threshold to be used on average
+    
+    ;-----  Criteria for maximum detection
     derivs: 1, $           ; Check derivatives on left/right side of max ? ( 1 = Yes)
     derivs_opt: [5,3],$    ; Check for at least 3 derivs on 5 on both sides
     max_value: 1 ,$        ; Check if max above threshold ? ( 1 = Yes)
     vi_tr_max : 4000 ,$    ; Threshold for max - if max below this value, it is discarded
     decrease: 1      ,$    ; Check if max decreases below a threshold on a window on th right side ? ( 1 = Yes)
     decrease_win: 8  ,$    ; Dimension of the decrease window
-    decrease_perc: 0.50 $; Percentage decrease to be checked
-  }
-
-  ; Set the criteria for minimum detection
-  min_criteria = { $
+    decrease_perc: 0.50, $; Percentage decrease to be checked
+    
+    ; Criteria for minimum detection
     min_value: 1, $     ; Check if min below threshold ? ( 1 = Yes)
     vi_tr_min : 2500 ,$   ; max threshold for legal min (If min above this threshold it is discarded)
     growth : 1      ,$    ; Check for positive derivatives after min ? ( 1 = Yes)
@@ -260,8 +270,18 @@ ENDIF ELSE BEGIN   ; On test run, set parameters to default values
     max_aft_win : [50/8,114/8],$;  First index: min number of compositing periods between min and max;
     ;  Second index: max number of compositing periods between min and max;
     LST: 1   ,$           ; Check if min occurs in a period with LST above a given threshold ? ( 1 = Yes)
-    LST_thresh: 15     $; Threshold for LST (in °C)
+    LST_thresh: 15,     $; Threshold for LST (in °C)
+    
+    ;---- Selected outputs
+    n_rice: 1, $
+    sow:1, $
+    flow:1, $
+    eos:0,$
+    integral:0 $
+    
   }
+
+
 ENDELSE
 
 ;-----------------------------------------------------------------------------------------------------
@@ -273,6 +293,7 @@ ENDELSE
 ;- --------------------------------------------------------- ;
 FOR proc_year = end_year, start_year, -1 DO BEGIN
 
+  opts.proc_year = proc_year
   t1 = systime(2)   ; Get starting time
   print, "# ############################################ #"
   print, "# Working on Year: "+ string(proc_year)
@@ -285,14 +306,17 @@ FOR proc_year = end_year, start_year, -1 DO BEGIN
   smooth_dirname = in_ts_folder+path_sep()+strtrim(proc_year,2)+path_sep()+'VI_Smoothed'
   smooth_file = smooth_dirname+path_sep()+'VI_smooth_'+strtrim(string(proc_year), 2)+'.dat'
   FILE_MKDIR, smooth_dirname
-
+  
+  out_filename = path_create([FILE_DIRNAME(ProgramRootDir()), 'test_data', 'Test_Output','Phenorice_out_'+strtrim(string(proc_year),2)+'.dat']); Out file name (Actually, a prefixc to which indication about processing year is appended
+  FILE_MKDIR,FILE_DIRNAME(out_filename)
+  
   out_files_list = {EVI_file: "", NDFI_file:"", Blue_file :"", $
     Rely_file:"", UI_file: "", DOY_file: "", LST_file:"", $
     Quality_file: "", Smooth_file : smooth_file , LC_File : in_lc_file}    ; Initialize array of output file names
 
 
-  in_files = pr_build_inputs_v30(or_ts_folder, in_ts_folder, in_bands_or, in_bands_derived , proc_year, out_filename,folder_suffixes_or, proc_opts, nodatas_or,$
-    resize, resize_bbox, min_criteria, max_criteria, mapscape, META, out_files_list, force_rebuild)
+  in_files = pr_build_inputs_v30(or_ts_folder, in_ts_folder, in_bands_or, in_bands_derived, out_filename, folder_suffixes_or, opts, nodatas_or, $
+   META, out_files_list, force_rebuild)
 
 
   ;- ---------------------------------------------------------- ;
@@ -302,18 +326,18 @@ FOR proc_year = end_year, start_year, -1 DO BEGIN
   ;- ---------------------------------------------------------- ;
 
   print, "# ############################################ #"
-  print, "# SMOOTHING VI DATA
+  print, "# SMOOTHING VI DATA "
   print, "# ############################################ #"
 
-  IF ((FILE_TEST(in_files.Smooth_file) EQ 0) OR (force_resmooth EQ 1)) THEN BEGIN
+;  IF ((FILE_TEST(in_files.Smooth_file) EQ 0) OR (force_resmooth EQ 1)) THEN BEGIN
 
-    IF (proc_opts.method EQ "normal") THEN smooth_file = pr_smooth_v30(in_files, proc_opts, proc_year, mapscape)
+    IF (opts.method EQ "normal") THEN smooth_file = pr_smooth_v30(in_files, opts, proc_year, mapscape)
 
-    IF (proc_opts.method EQ "parallel-pixel") THEN smooth_file = pr_smooth_v30_parpix(in_files, proc_opts, proc_year, mapscape)
+    IF (opts.method EQ "parallel-pixel") THEN smooth_file = pr_smooth_v30_parpix(in_files, opts, proc_year, mapscape)
 
-    IF (proc_opts.method EQ "parallel-line") THEN smooth_file = pr_smooth_v30_parline(in_files, proc_opts, proc_year, mapscape)
-
-  ENDIF
+    IF (opts.method EQ "parallel-line") THEN smooth_file = pr_init_processing_v30_parline(in_files, opts)
+;
+;  ENDIF
 
   T2=systime(1)
   ;    print,"start processing:", t1
@@ -329,18 +353,15 @@ FOR proc_year = end_year, start_year, -1 DO BEGIN
   ;- ---------------------------------------------------------- ;
 
   print, "# ############################################ #"
-  print, "# PERFORMING PHENOLOGICAL ANALYSIS
+  print, "# PERFORMING PHENOLOGICAL ANALYSIS "
   print, "# ############################################ #"
 
   print, "# Main PhenoRice processing"
   ;  outrast_folder = path_create([out_folder, strtrim(proc_year,2),"raster"])  ; output folder for images
-  ;  outlog_folder = path_create([out_folder, "log"])                            ; output folder for log
-  ;  out_logfile = path_create([outlog_folder,(out_file_prefix + "_Log_file.txt")])  ; output log file
-  ;
-  ;  out_proc = pr_process_v30(in_files , out_filename , pr_opts , $
-  ;    avg_criteria,max_criteria, min_criteria, out_logfile , proc_year , note, resize, $
-  ;    start_x, end_x,start_y, end_y, mapscape)
-  ;
+;  IF (opts.method EQ "parallel-line") THEN out_proc = pr_init_process_v30_parline(in_files , out_filename , opts , $
+;      resize, resize_bbox, mapscape, overwrite_out)
+;  ;
+     ;
   ;  T2=systime(2)
   ;  print,"start processing:", T1
   ;  print,"start processing:", T2

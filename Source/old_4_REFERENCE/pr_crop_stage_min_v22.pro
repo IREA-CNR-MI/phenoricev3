@@ -39,7 +39,7 @@
 ;
 ;License GPL(>2)
 ;-
-function pr_crop_stage_min_v30, smooth_pix , rice_min_arr_pix, rice_max_arr_pix, NDII_pix, NDFI_pix, LST_pix,     $
+function pr_crop_stage_min_v22, smooth_pix , rice_min_arr_pix, rice_max_arr_pix, NDII_pix, NDFI_pix, LST_pix,     $
   der_neg_pix, der_pos_pix, nb,minthresh,growth_ind, growth_wid, growth_thresh, $
   vi_flood_ind,vi_flood_wid,  check_NDFI,check_NDII,vi_max_ind, LST_thresh, check_arr_min, win_dim_l, doys_reg,doy_pix
 

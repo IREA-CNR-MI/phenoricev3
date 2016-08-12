@@ -21,7 +21,7 @@
 ;
 ;License GPL(>2)
 ;-
-function pr_smooth_lst_v30, lst_pix,nb
+function pr_smooth_lst_v22, lst_pix,nb
   compile_opt idl2
     
   zero_positions = where ((lst_pix LT -50) OR (lst_pix GT 50))    ; Find gaps

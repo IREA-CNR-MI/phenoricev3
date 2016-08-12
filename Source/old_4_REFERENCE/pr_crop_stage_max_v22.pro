@@ -27,7 +27,7 @@
 ;
 ;License GPL(>2)
 ;-
-function pr_crop_stage_max_v30, smooth_pix, rice_max_arr_pix, der_neg_pix, der_pos_pix,nb, pr_opts, $
+function pr_crop_stage_max_v22, smooth_pix, rice_max_arr_pix, der_neg_pix, der_pos_pix,nb, pr_opts, $
            der_ind,maxdec_wid, maxdec_win, maxthresh, maxdec_perc, check_arr_max, win_dim_l
 
   ;--------------------------------------- Absolute seasonal MAX identification :
