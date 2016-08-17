@@ -4,7 +4,8 @@ FUNCTION doy2date, day_of_year, $        ; Input
   day     = day, $      ; Output keyword
   c_month = c_month     ; Output keyword
 
-
+  COMPILE_OPT IDL2
+  COMPILE_OPT hidden
 
   ;------------------------------------------------------------------------------
   ;                            -- RCS Id info --

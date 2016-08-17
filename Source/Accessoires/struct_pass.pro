@@ -26,8 +26,9 @@
 ;https://svn.ssec.wisc.edu/repos/bennartz_group/LIBRARY/idl/group_libs/parallel/struct_pass.pro
 ;-
 PRO struct_pass, str, obj, level=level
-
-  COMPILE_OPT idl2
+  COMPILE_OPT IDL2
+  COMPILE_OPT hidden
+  
   obj->Execute, ".r " + FILE_DIRNAME(ProgramRootDir())+PATH_SEP()+"Accessoires"+PATH_SEP()+"struct_addtags.pro"
   obj->Execute, ".r " + FILE_DIRNAME(ProgramRootDir())+PATH_SEP()+"Accessoires"+PATH_SEP()+"undefine.pro"
   IF NOT keyword_set(level) THEN level=-1

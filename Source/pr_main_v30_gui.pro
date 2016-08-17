@@ -2,67 +2,151 @@
 ;:Description
 ; Main launching script for the PHENORICE v3.0 application
 ;   --> Calls the GUI for selecting processing parameters
-;   --> Launches the script for creating input time series (pr_build_inputs_v3_filler.pro)
-;   --> Launch processing (pr_process_v3)
+;   --> Set up the structure containing processing options (opts)
+;   --> Launches the script for creating input time series (pr_build_inputs_v33.pro)
+;   --> Launch processing (pr_init_processing_v30_parline)
 
 ;Details
 ;
 ;:RETURNS:
 ;
-;:AUTHOR: Lorenzo Busetto, phD (2014)
-;  #' email: busetto.l@irea.cnr.it
+;:AUTHOR: Lorenzo Busetto, phD - email: busetto.l@irea.cnr.it(2016)
 ;
-;License GPL(>2)
+;License GPL(>3.0)
 ;-
 
-
 COMPILE_OPT idl2
-t1 = systime(1) & ddmm = strcompress(strmid(t1,4,6),/REMOVE_ALL) ; ddmm = date of processing run
+compile_opt hidden
+
+t1 = systime(1)
 
 ;- --------------------------------------------------------- ;
 ; Set Flags for particular processing
 ;- --------------------------------------------------------- ;
 
-mapscape = 0      ; Specify to use "mapscape" input files --> Leads to changes in NODATA values and generate smoothed file from MAPSCAPE data!!!
-overwrite_out = 1 ; If = 0, then trying to overwrite existing outputs is NOT POSSIBLE
+  method         = 'parallel-line'; Processing method *"parallel-line" (faster - difficult to debug ! )) - remove if no problem of memory
+  force_rebuild  = 0              ; Flag. if set to 1 the input files are rebuilt (overwritten) even if already existing
+  force_resmooth = 0              ; Flag. if set to 1 the smoothed file is rebuilt (overwritten) even if already existing
+  overwrite_out  = 1              ; If = 0, then trying to overwrite existing outputs is NOT POSSIBLE
+  fullout        = 1              ; Specify if also building an output file containing all bands
+  test_data      = 1              ; Leads to using default input data and parameters (for testing purposes)
+  test_folder    = 'IT_Clipped'   ; testing data folder
+  debug          = 1              ; Specify if using "standard" processing for debug purposes. 
+                                  ; If set to 1, parallel processing is not used so that the debug is easier
+  mapscape       = 0              ; Specify to use "mapscape" input files ;
+                                  ;--> Leads to changes in NODATA values and generate smoothed file from MAPSCAPE data!!!
 
-test_data = 1     ; Leads to using default input data and parameters (for testing purposes)
-test_folder = 'IT_Clipped'   ; testing data folder
-method = 'parallel-line'   ; Processing method ("normal" (slow),  "parallel-pixel" or "parallel-line" (faster - difficult to debug ! ))
+  ; TODO: substitute with automatic resize of imagery on the basis of an input shape/raster file.
+  resize         = 0
+  resize_bbox    = [538,2028,1882,2692]
 
-force_rebuild  = 0    ; Flag. if set to 1 the smoothed file is rebuilt (overwritten) even if already existing
-force_resmooth = 0    ; Flag. if set to 1 the smoothed file is rebuilt (overwritten) even if already existing
-
-; old_approach = 1  ; Leads to using the "old" (e.g., July 2016) computation algorithms so to check differences with v3.0
-
-; TODO: substitute with automatic resize of imagery on the basis of an input shape/raster file.
-resize = 0
-resize_bbox = [538,2028,1882,2692]
-
-;---------- ----
-
-;- --------------------------------------------------------- ;
+;- --------------------------------------------------- ;
 ; Set general variables ------------------------------ ;
-;- --------------------------------------------------------- ;
+;- --------------------------------------------------- ;
 
-in_bands_or = ['EVI','NDFI','b3_Blue','Rely','UI','DOY','LST']  ; Codenames of the input bands (inherited from the MODIStsp R package (https://github.com/lbusett/MODIStsp)
-; Used in the phase of building the "short" time series using pr_build_inputs
-; The first item indicate whether to use EVI or NDVI -> Change: Removed NDII7 since it's useless !
+  ; Codenames of the input bands (inherited from MODIStsp R package (https://github.com/lbusett/MODIStsp)
+  ; Used in the phase of building the "short" time series using pr_build_inputs
+  ; The first item indicate whether to use EVI or NDVI -> Change: Removed NDII7 since it's useless !
 
-; in_bands_derived =['QUALITY','SNOW','LC','SEASON']                ; Leftover of previous scheme -  check if removal is possible.
+  in_bands_or = ['EVI','NDFI','b3_Blue','Rely','UI','DOY','LST']  
 
-folder_suffixes_or = ['VI_16Days_250m','VI_16Days_250m','VI_16Days_250m','VI_16Days_250m', $      ; Folders where MODIStsp stores the different parameters
-  'VI_16Days_250m','VI_16Days_250m','Surf_Temp_8Days_1Km']
+  ; Folders where MODIStsp stores the different parameters - do not touch !
 
-nodatas_or = [32767,32767,32767,32767,255,255,32767,32767]
+  folder_suffixes_or = ['VI_16Days_250m','VI_16Days_250m','VI_16Days_250m','VI_16Days_250m', $  
+    'VI_16Days_250m','VI_16Days_250m','Surf_Temp_8Days_1Km']
 
-IF mapscape EQ 1 THEN  nodatas_or = [32767,32767,32767,32767,255,255,32767,-1]      ; If mapscape inputs are used, NODATA values for Surf_Temp are different ! To be changed in mapscape
+  ; Nodata values used in MODIStsp for the different parameters
 
-IF test_data EQ 0 THEN BEGIN  ;
+  nodatas_or = [32767,32767,32767,32767,255,255,32767,32767]
 
-  ;- --------------------------------------------------------------- ;
-  ;-  IF not run on test_data, then open the GUI to select parameters
-  ;- --------------------------------------------------------------- ;
+  ; If mapscape inputs are used, NODATA values for Surf_Temp are different ! To be changed in mapscape !!
+  IF mapscape EQ 1 THEN  nodatas_or = [32767,32767,32767,32767,255,255,32767,-1]
+
+;- -------------------------------------------------- ;
+; Create opts structure containing processing options ;
+;- -------------------------------------------------- ;
+
+; If working on test data, set options to default values and set paths to test datasets
+  IF test_data EQ 1 THEN BEGIN  
+
+  ; Input folder where times series (Single date files) created with MODIStso are stored - 
+  ; (NOT required if input time series of the considered year are already available !)
+    or_ts_folder = path_create([FILE_DIRNAME(ProgramRootDir()), 'test_data', test_folder,'Original_MODIS']) 
+    ; Folder where time series to be used as input for phenorice will be stored -->  Intermediate multiband files
+    in_ts_folder = path_create([FILE_DIRNAME(ProgramRootDir()), 'test_data', test_folder, 'inputs'])   
+  ; Name of the input "land cover masking" file. Only pixels at "1" in this file are processed
+    in_lc_file = path_create([FILE_DIRNAME(ProgramRootDir()), 'test_data', test_folder,'Ancillary', $
+      'Land_Cover', 'Mask.dat']) 
+
+    start_year = 2015     &         end_year = 2015   ; Start and end year for the analysis
+
+    opts = { $ 
+  ;---- General Options
+      in_VI          : "EVI", $   ; Name of the VI index used
+      in_flood_ind   : "NDFI", $  ; Name of flooding Index
+      sel_seasons    : [1,1,1,0],$; Quarters to be analyzed
+      doy_1q         : [0,90],$   ; -> Start and end DOYs of each "season"
+      doy_2q         : [91,180],$
+      doy_3q         : [181,257],$
+      doy_4q         : [270,290],$
+      win_dim_l      : 3 ,$       ; -> Smooth's window dimentions (left & right) :
+      win_dim_r      : 3 ,$
+      cloud_clear    : 500 ,$     ; -> Blue band thresholds for cloud level identification :
+      cloud_full     : 1800, $
+      method         : method ,$  ; processing method - to be removed id parline is ok
+      proc_year      : 0000, $    ; processing years
+      ovr            : overwrite_out, $  ; flag: if 1, outputs are overwritten if existing
+      mapscape       : mapscape, $; flag: if 1, try using mapscape smoothed array
+      resize         : resize, $  ; dummy for now - to be used to allow processing of subsets
+      resize_bbox    : resize_bbox, $
+      force_resmooth : force_resmooth, $ ; flag - if 1, smoothing is redone even if file existing
+      debug          : debug, $   ; flag - if 1, don't use parallel processing to allow debug
+      fullout        : fullout, $ ; flag - if 1, build also an output file with all bands
+
+  ;---- Criteria on Average
+      avg_check      : 1 ,$      ; Check if average VI Above threshold ? (1 = Yes)
+      avg_thresh     : 5000, $   ; Threshold to be used on average
+
+  ;-----  Criteria for maximum detection
+      derivs         : 1, $      ; Check derivatives on left/right side of max ? ( 1 = Yes)
+      derivs_opt     : [5,3],$   ; Check for at least 3 derivs on 5 on both sides
+      max_value      : 1 ,$      ; Check if max above threshold ? ( 1 = Yes)
+      vi_tr_max      : 4000 ,$   ; Threshold for max - if max below this value, it is discarded
+      decrease       : 1      ,$ ; Check if max decreases below a threshold on a window on th right side ? ( 1 = Yes)
+      decrease_win   : 8  ,$     ; Dimension of the decrease window (as number of 8 days periods)
+      decrease_perc  : 0.50, $   ; Percentage decrease to be checked
+  ;---- Criteria for minimum detection
+      min_value      : 1, $      ; Check if min below threshold ? ( 1 = Yes)
+      vi_tr_min      : 2500 ,$   ; max threshold for legal min (If min above this threshold it is discarded)
+      growth         : 1      ,$ ; Check for positive derivatives after min ? ( 1 = Yes)
+      growth_opt     : [5,3] ,$  ; First index: fimension of the window; second index: how many in the window must be postive for the min to be legit
+      flood          : 1      ,$ ; Check for ocurrence of a flooding in a window of dim flood_win centered on min ? ( 1 = Yes)
+      flood_win      : 16   ,$    ; dimension of win to be checked for flood (in DAYS)
+      check_NDFI     : 1 , $     ; Do the check on NDFI ? (default to 1)
+      max_after      : 1   ,$     ; Check if min is followed by a max in a win of dimension specified below ? ( 1 = Yes)
+      max_aft_win    : [50/8,114/8],$;  First index: min number of compositing periods between min and max;
+      LST            : 1   ,$           ; Check if min occurs in a period with LST above a given threshold ? ( 1 = Yes)
+      LST_thresh     : 15,     $ ; Threshold for LST (in °C)
+
+      ;---- Selected outputs
+      n_rice         : 1, $   ; Number of rice seasons
+      max            : 0, $   ; DOY of Max EVI
+      sow            : 1, $   ; DOY of sowing (min)
+      hh             : 1, $   ; DOY of flowering (midpoint EVI Z 90th perc.)
+      eos            : 1, $   ; EOS (decrease 50 %)
+      int            : 1, $   ; Cumulated EVI between min and flowering
+      maxvi          : 0, $   ; EVI at maximum
+      minvi          : 0, $   ; EVI at minimum
+      maxmin         : 1, $   ; Length of vegetative season
+      eosmin         : 1  $   ; Length of season (EOS to SOS)
+
+    }
+
+  ENDIF ELSE BEGIN
+
+;- --------------------------------------------------------------- ;
+;-  IF not run on test_data, then open the GUI to select parameters
+;- --------------------------------------------------------------- ;
 
   ; TODO: Create a IDL Widget GUI
   R_GUI_function_path = ProgramRootDir()+'Source'+path_sep()+'phenorice'+path_sep()+'source'+path_sep()+'Accessoires'+path_sep()+'Phenorice_GUI.R'
@@ -70,9 +154,10 @@ IF test_data EQ 0 THEN BEGIN  ;
   spawn,launch_string, out_folder
   out_folder = strmid(out_folder, 5,(strlen(out_folder)-6))    ; Get the out_folder from the GUI
 
-  ;---------- ----
-  ; Read the input options from the txt file saved by Phenorice_GUI (TO be removed after switching to IDL GUI
-  ;---------- ----
+;- --------------------------------------------------------------- ;
+; Read the input options from the txt file saved by Phenorice_GUI (TO be removed after switching to IDL GUI
+;- --------------------------------------------------------------- ;
+
   IF out_folder EQ '' OR out_folder EQ 'ALS'THEN BEGIN
     print, 'User selected to quit'
     stop
@@ -92,7 +177,7 @@ IF test_data EQ 0 THEN BEGIN  ;
   in_opts_arr[where(in_opts_arr EQ 'On')] = 1     ; Convert "Yes/No" to 0/1
   in_opts_arr[where(in_opts_arr EQ 'Off')] = 0
 
-  or_ts_folder = in_opts_arr[1] ; Input folder where times series (Single date files) created with MODIStso are stored - (NOT required if input time series of the considered year are already available !)
+  or_ts_folder = in_opts_arr[1] ; Input folder where times series (Single date files) created with MODIStsp are stored - (NOT required if input time series of the considered year are already available !)
 
   in_ts_folder = in_opts_arr[4]   ; Folder where time series to be used as input for phenorice will be stored -->  Intermediate multiband files
 
@@ -106,13 +191,13 @@ IF test_data EQ 0 THEN BEGIN  ;
 
   sel_seasons = [fix(in_opts_arr[5]),fix(in_opts_arr[12]),fix(in_opts_arr[19]),fix(in_opts_arr[26])]    ;
 
-  ; The R GUI converts the selected day/months into DOYS. Here I retrieve the doys and convert the start and end doysto start and end
-  ; "indexes" of MODIS images within the image stack
+  ; The R GUI converts the selected day/months into DOYS. Here I retrieve the doys and use them to 
+  ; define doy ranges where the maximums will be allowed to be in each quarter
 
-  stard_doy_seas1=  in_opts_arr[10]   &   end_doy_seas1=  in_opts_arr[11]
-  stard_doy_seas2=  in_opts_arr[17]   &   end_doy_seas2=  in_opts_arr[18]
-  stard_doy_seas3=  in_opts_arr[24]   &   end_doy_seas3=  in_opts_arr[25]
-  stard_doy_seas4=  in_opts_arr[31]   &   end_doy_seas4=  in_opts_arr[32]
+  stard_doy_seas1 = in_opts_arr[10]   &   end_doy_seas1 = in_opts_arr[11]
+  stard_doy_seas2 = in_opts_arr[17]   &   end_doy_seas2 = in_opts_arr[18]
+  stard_doy_seas3 = in_opts_arr[24]   &   end_doy_seas3 = in_opts_arr[25]
+  stard_doy_seas4 = in_opts_arr[31]   &   end_doy_seas4 = in_opts_arr[32]
 
   range_seas_1 = indgen(abs(fix(stard_doy_seas1)-fix(end_doy_seas1)-1))+stard_doy_seas1
   range_seas_2 = indgen(abs(fix(stard_doy_seas2)-fix(end_doy_seas2)-1))+stard_doy_seas2
@@ -120,8 +205,8 @@ IF test_data EQ 0 THEN BEGIN  ;
   range_seas_4 = indgen(abs(fix(stard_doy_seas4)-fix(end_doy_seas4)-1))+stard_doy_seas4
 
   ; Check if the specified ranges "make sense". - NOTE: Ranges must NOT overlap and be "ordered" even if some of them are deselected ! (TO BE FIXED ! )
-  ; Also, if season 1 is selected and with a negative starting month, then it must not overlap with the other seasons (taht is, if I go back to novemeber last year
-  ; to account for areas in which the Maximum can be between November and January, then the other ranges must go at mkaximum to novemeber,
+  ; Also, if season 1 is selected and with a negative starting month, then it must not overlap with the other seasons (that is, if I go back to novemeber last year
+  ; to account for areas in which the Maximum can be between November and January, then the other ranges must go at maximum to novemeber,
   ; otherwise I will count twice the same "season", one for "previous" and one for "current " year
 
   order = sort([stard_doy_seas1,stard_doy_seas2,stard_doy_seas3,stard_doy_seas4])
@@ -141,9 +226,11 @@ IF test_data EQ 0 THEN BEGIN  ;
     stop
   ENDIF
 
+  ; Check for possible overlapping between consecutive years
+
   IF (stard_doy_seas1 LT 0) THEN BEGIN
     range_seas1_cor = 365+range_seas_1
-    IF (total(sel_seasons[0:1]) EQ 2)  THEN Inters_1_2_cor= SetIntersection(range_seas1_cor, range_seas_2) ELSE inters_1_2_cor = -999
+    IF (total(sel_seasons[0:1]) EQ 2)           THEN Inters_1_2_cor= SetIntersection(range_seas1_cor, range_seas_2)  ELSE inters_1_2_cor = -999
     IF ((sel_seasons [0] + sel_seasons[2] )EQ 2) THEN Inters_1_3_cor = SetIntersection(range_seas1_cor, range_seas_3) ELSE inters_1_3_cor = -999
     IF ((sel_seasons [0] + sel_seasons[3] )EQ 2) THEN Inters_1_4_cor = SetIntersection(range_seas1_cor, range_seas_4) ELSE inters_1_4_cor = -999
 
@@ -154,224 +241,130 @@ IF test_data EQ 0 THEN BEGIN  ;
 
   ENDIF
 
-; set-up processing options retrieving data from GUI
+  ; set-up processing options using data retrieved from GUI
 
   opts = { $
-    
+
     ;---- General Options
-    in_VI: in_bands_or[0], $     ; Name of the index
-    in_flood_ind : in_bands_or[1], $      ; Name of NDVI Index
-    sel_seasons : sel_seasons,$
-    doy_1q : [stard_doy_seas1,end_doy_seas1],$                          ; -> Start and end bands of each "season"
-    doy_2q : [stard_doy_seas2,end_doy_seas2],$
-    doy_3q : [stard_doy_seas3,end_doy_seas3],$
-    doy_4q : [stard_doy_seas4,end_doy_seas4],$
-    win_dim_l : 3 ,$         ; -> Smooth's window dimentions (left & right) :
-    win_dim_r : 3 ,$
-    cloud_clear : 500 ,$      ; -> Blu band thresholds for cloud level identification :
-    cloud_full  : 1800, $
-    method : method, $
-    proc_year: 0000, $
-    ovr :overwrite_out, $
-    mapscape: mapscape, $
-    resize: resize, $
-    resize_bbox: resize_bbox, $
-    force_resmooth: force_resmooth, $
-    
+    in_VI           : in_bands_or[0], $     ; Name of the index
+    in_flood_ind    : in_bands_or[1], $      ; Name of NDVI Index
+    sel_seasons     : sel_seasons,$
+    doy_1q          : [stard_doy_seas1,end_doy_seas1],$ ; -> Start and end bands of each "season"
+    doy_2q          : [stard_doy_seas2,end_doy_seas2],$
+    doy_3q          : [stard_doy_seas3,end_doy_seas3],$
+    doy_4q          : [stard_doy_seas4,end_doy_seas4],$
+    win_dim_l       : 3 ,$         ; -> Smooth's window dimentions (left & right) :
+    win_dim_r       : 3 ,$
+    cloud_clear     : 500 ,$      ; -> Blu band thresholds for cloud level identification :
+    cloud_full      : 1800, $
+    method          : method, $
+    proc_year       : 0000, $
+    ovr             : overwrite_out, $
+    mapscape        : mapscape, $
+    resize          : resize, $
+    resize_bbox     : resize_bbox, $
+    force_resmooth  : force_resmooth, $
+    debug           : debug, $
+    fullout         : fullout, $
+
     ;---- Criteria on Average
-    avg_check : fix(in_opts_arr[35]) ,$   ; Check if average VI Above threshold ? (1 = Yes)
-    avg_thresh : fix(in_opts_arr[36]), $; Threshold to be used on average
-    
+    avg_check       : fix(in_opts_arr[35]) ,$ ; Check if average VI Above threshold ? (1 = Yes)
+    avg_thresh      : fix(in_opts_arr[36]) ,$ ; Threshold to be used on average
+
     ;---- Criteria on Maximums
-    derivs: 1, $           ; Check derivatives on left/right side of max ? ( 1 = Yes)
-    derivs_opt: [5,3],$    ; Check for at least 3 derivs on 5 on both sides
-    max_value: fix(in_opts_arr[37]) ,$        ; Check if max above threshold ? ( 1 = Yes)
-    vi_tr_max : fix(in_opts_arr[38]) ,$    ; Threshold for max - if max below this value, it is discarded
-    decrease: fix(in_opts_arr[41])      ,$    ; Check if max decreases below a threshold on a window on th right side ? ( 1 = Yes)
-    decrease_win: fix(in_opts_arr[40])/8  ,$    ; Dimension of the decrease window
-    decrease_perc: float(in_opts_arr[39]), $; Percentage decrease to be checked
-        
+    derivs          : 1, $       ; Check derivatives on left/right side of max ? ( 1 = Yes)
+    derivs_opt      : [5,3],$    ; Check for at least 3 derivs on 5 on both sides
+    max_value       : fix(in_opts_arr[37])  ,$ ; Check if max above threshold ? ( 1 = Yes)
+    vi_tr_max       : fix(in_opts_arr[38])  ,$ ; Threshold for max - if max below this value, it is discarded
+    decrease        : fix(in_opts_arr[41])  ,$ ; Check if max decreases below a threshold on a window on th right side ? ( 1 = Yes)
+    decrease_win    : fix(in_opts_arr[40])/8,$ ; Dimension of the decrease window
+    decrease_perc   : float(in_opts_arr[39]),$ ; Percentage decrease to be checked
+
     ;---- Criteria on Minimums
-    min_value: fix(in_opts_arr[42]), $     ; Check if min below threshold ? ( 1 = Yes)
-    vi_tr_min : fix(in_opts_arr[43]) ,$   ; max threshold for legal min (If min above this threshold it is discarded)
-    growth : 1      ,$    ; Check for positive derivatives after min ? ( 1 = Yes)
-    growth_opt: [5,3] ,$  ; First index: fimension of the window; second index: how many in the window must be postive for the min to be legit
-    flood: fix(in_opts_arr[44])      ,$      ; Check for ocurrence of a flooding in a window of dim flood_win centered on min ? ( 1 = Yes)
-    flood_win: fix(in_opts_arr[45])   ,$    ; dimension of win to be checked for flood (in DAYS)
-    check_NDFI: 1 , $     ; Do the check on NDFI ? (default to 1)
-    check_NDII: 0 , $     ; Do the check on NDII (Xiao) ? Default to 0
-    max_after: fix(in_opts_arr[46])   ,$     ; Check if min is followed by a max in a win of dimension specified below ? ( 1 = Yes)
-    max_aft_win : [fix(in_opts_arr[47])/8,fix(in_opts_arr[48])/8],$;  First index: min number of compositing periods between min and max;
+    min_value       : fix(in_opts_arr[42]), $  ; Check if min below threshold ? ( 1 = Yes)
+    vi_tr_min       : fix(in_opts_arr[43]) ,$  ; max threshold for legal min (If min above this threshold it is discarded)
+    growth          : 1     ,$  ; Check for positive derivatives after min ? ( 1 = Yes)
+    growth_opt      : [5,3] ,$  ; First index: fimension of the window; second index: how many in the window must be postive for the min to be legit
+    flood           : fix(in_opts_arr[44]) ,$ ; Check for ocurrence of a flooding in a window of dim flood_win centered on min ? ( 1 = Yes)
+    flood_win       : fix(in_opts_arr[45]) ,$ ; dimension of win to be checked for flood (in DAYS)
+    check_NDFI      : 1 , $     ; Do the check on NDFI ? (default to 1)
+    max_after       : fix(in_opts_arr[46]) ,$     ; Check if min is followed by a max in a win of dimension specified below ? ( 1 = Yes)
+    max_aft_win     : [fix(in_opts_arr[47])/8,fix(in_opts_arr[48])/8],$;  First index: min number of compositing periods between min and max;
     ;  Second index: max number of compositing periods between min and max;
-    LST: fix(in_opts_arr[49])   ,$           ; Check if min occurs in a period with LST above a given threshold ? ( 1 = Yes)
-    LST_thresh: fix(in_opts_arr[50] ),     $; Threshold for LST (in °C)
-    
+    LST             : fix(in_opts_arr[49]) ,$           ; Check if min occurs in a period with LST above a given threshold ? ( 1 = Yes)
+    LST_thresh      : fix(in_opts_arr[50] ),$ ; Threshold for LST (in °C)
+
     ;---- Selected outputs
-    n_rice: 1, $ 
-    sow:1, $
-    flow:1, $
-    eos:0,$
-    integral:0 $
-    
-  }
+    n_rice          : 1, $
+    sow             : 1, $
+    flow            : 1, $
+    eos             : 0, $
+    integral        : 0  $
 
-ENDIF ELSE BEGIN   ; On test run, set parameters to default values
-
-  or_ts_folder = path_create([FILE_DIRNAME(ProgramRootDir()), 'test_data', test_folder,'Original_MODIS']) ; Input folder where times series (Single date files) created with MODIStso are stored - (NOT required if input time series of the considered year are already available !)
-  in_ts_folder = path_create([FILE_DIRNAME(ProgramRootDir()), 'test_data', test_folder, 'inputs'])   ; Folder where time series to be used as input for phenorice will be stored -->  Intermediate multiband files
-  in_lc_file = path_create([FILE_DIRNAME(ProgramRootDir()), 'test_data', test_folder,'Ancillary', 'Land_Cover', 'Mask.dat'])         ; Name of the input "land cover masking" file. Only pixels at "1" in this file are processed
-  start_year = 2015     &         end_year = 2015   ; Start and end year for the analysis
-
-; set default options
-
-  opts = { $
-    ;---- General Options
-    in_VI: "EVI", $     ; Name of the index
-    in_flood_ind : "NDFI", $      ; Name of NDVI Index
-    sel_seasons : [1,1,1,0],$
-    doy_1q : [0,90],$                          ; -> Start and end bands of each "season"
-    doy_2q : [91,180],$
-    doy_3q : [181,270],$
-    doy_4q : [270,290],$
-    win_dim_l : 3 ,$         ; -> Smooth's window dimentions (left & right) :
-    win_dim_r : 3 ,$
-    cloud_clear : 500 ,$      ; -> Blu band thresholds for cloud level identification :
-    cloud_full  : 1800, $
-    method : method ,$
-    proc_year: 0000, $
-    ovr :overwrite_out, $
-    mapscape: mapscape, $
-    resize: resize, $
-    resize_bbox: resize_bbox, $
-    force_resmooth: force_resmooth, $
-    
-    ;---- Criteria on Average
-    avg_check : 1 ,$   ; Check if average VI Above threshold ? (1 = Yes)
-    avg_thresh : 5000, $; Threshold to be used on average
-    
-    ;-----  Criteria for maximum detection
-    derivs: 1, $           ; Check derivatives on left/right side of max ? ( 1 = Yes)
-    derivs_opt: [5,3],$    ; Check for at least 3 derivs on 5 on both sides
-    max_value: 1 ,$        ; Check if max above threshold ? ( 1 = Yes)
-    vi_tr_max : 4000 ,$    ; Threshold for max - if max below this value, it is discarded
-    decrease: 1      ,$    ; Check if max decreases below a threshold on a window on th right side ? ( 1 = Yes)
-    decrease_win: 8  ,$    ; Dimension of the decrease window
-    decrease_perc: 0.50, $; Percentage decrease to be checked
-    
-    ; Criteria for minimum detection
-    min_value: 1, $     ; Check if min below threshold ? ( 1 = Yes)
-    vi_tr_min : 2500 ,$   ; max threshold for legal min (If min above this threshold it is discarded)
-    growth : 1      ,$    ; Check for positive derivatives after min ? ( 1 = Yes)
-    growth_opt: [5,3] ,$  ; First index: fimension of the window; second index: how many in the window must be postive for the min to be legit
-    flood: 1      ,$      ; Check for ocurrence of a flooding in a window of dim flood_win centered on min ? ( 1 = Yes)
-    flood_win: 16   ,$    ; dimension of win to be checked for flood (in DAYS)
-    check_NDFI: 1 , $     ; Do the check on NDFI ? (default to 1)
-    max_after: 1   ,$     ; Check if min is followed by a max in a win of dimension specified below ? ( 1 = Yes)
-    max_aft_win : [50/8,114/8],$;  First index: min number of compositing periods between min and max;
-    ;  Second index: max number of compositing periods between min and max;
-    LST: 1   ,$           ; Check if min occurs in a period with LST above a given threshold ? ( 1 = Yes)
-    LST_thresh: 15,     $; Threshold for LST (in °C)
-    
-    ;---- Selected outputs
-    n_rice: 1, $
-    sow:1, $
-    flow:1, $
-    eos:0,$
-    integral:0 $
-    
   }
 
 
-ENDELSE
+  ENDELSE ; END else on use of test data
 
 ;-----------------------------------------------------------------------------------------------------
-; Start the processing --> Call the pr_process routine with a cycle on years and selected parameters
+; Start the processing --> Call the pr_build_inputs and then the pr_init_processing
+; routines with a cycle on years
 ;-----------------------------------------------------------------------------------------------------
 
 ;- --------------------------------------------------------- ;
 ;-  Start Cycling on years
 ;- --------------------------------------------------------- ;
-FOR proc_year = end_year, start_year, -1 DO BEGIN
+  FOR proc_year = end_year, start_year, -1 DO BEGIN
 
-  opts.proc_year = proc_year
-  t1 = systime(2)   ; Get starting time
-  print, "# ############################################ #"
-  print, "# Working on Year: "+ string(proc_year)
-  print, "# ############################################ #"
+    opts.proc_year = proc_year
+    t1 = systime(2)   ; Get starting time
+    print, "# ############################################ #"
+    print, "# Working on Year: "+ string(proc_year)
+    print, "# ############################################ #"
 
   ;- --------------------------------------------------------- ;
-  ;-  Creates input files starting from "long" time series)
+  ;-  Create input files starting from MODIStsp time series)
   ;- --------------------------------------------------------- ;
-  print, "# BUILDING INPUT MULTITEMPORAL FILES"
-  smooth_dirname = in_ts_folder+path_sep()+strtrim(proc_year,2)+path_sep()+'VI_Smoothed'
-  smooth_file = smooth_dirname+path_sep()+'VI_smooth_'+strtrim(string(proc_year), 2)+'.dat'
-  FILE_MKDIR, smooth_dirname
-  
-  out_filename = path_create([FILE_DIRNAME(ProgramRootDir()), 'test_data', 'Test_Output','Phenorice_out_'+strtrim(string(proc_year),2)+'.dat']); Out file name (Actually, a prefixc to which indication about processing year is appended
-  FILE_MKDIR,FILE_DIRNAME(out_filename)
-  
-  out_files_list = {EVI_file: "", NDFI_file:"", Blue_file :"", $
-    Rely_file:"", UI_file: "", DOY_file: "", LST_file:"", $
-    Quality_file: "", Smooth_file : smooth_file , LC_File : in_lc_file}    ; Initialize array of output file names
+    print, "# BUILDING INPUT MULTITEMPORAL FILES"
+    print, "# ############################################ #"
+    smooth_dirname = in_ts_folder+path_sep()+(string(proc_year)).trim()+path_sep()+'VI_Smoothed'
+    smooth_file = smooth_dirname+path_sep()+'VI_smooth_'+strtrim(string(proc_year), 2)+'.dat'
+    FILE_MKDIR, smooth_dirname
 
+    out_filename = path_create([FILE_DIRNAME(ProgramRootDir()), 'test_data', test_folder,'Outputs','Phenorice_out_'+(string(proc_year)).trim()]); Out file name (Actually, a prefixc to which indication about processing year is appended
+    FILE_MKDIR,FILE_DIRNAME(out_filename)
 
-  in_files = pr_build_inputs_v30(or_ts_folder, in_ts_folder, in_bands_or, in_bands_derived, out_filename, folder_suffixes_or, opts, nodatas_or, $
-   META, out_files_list, force_rebuild)
+    ; Initialize structure of file names
+    out_files_list = {EVI_file: "", NDFI_file:"", Blue_file :"", $
+      Rely_file:"", UI_file: "", DOY_file: "", LST_file:"", $
+      Quality_file: "", Smooth_file : smooth_file , LC_File : in_lc_file, $
+      out_filename : out_filename}
 
+    in_files = pr_build_inputs_v30(or_ts_folder, in_ts_folder, in_bands_or, in_bands_derived, out_filename, $
+      folder_suffixes_or, opts, nodatas_or, META, out_files_list, force_rebuild)
 
   ;- ---------------------------------------------------------- ;
-  ;-  Smooth Time series (If smoothed file doesn't exist already)
+  ;- Launch processsing: smoothing + pheno (if smoothing file exists, 
+  ;- the existing one is used unless opts.force_resmooth = 1)
   ;- -----------------------------------------------------------;
-  ; if (NOT EXISTS Smoothed file --> Launch pr_smoothv30
-  ;- ---------------------------------------------------------- ;
-
-  print, "# ############################################ #"
-  print, "# SMOOTHING VI DATA "
-  print, "# ############################################ #"
-
-;  IF ((FILE_TEST(in_files.Smooth_file) EQ 0) OR (force_resmooth EQ 1)) THEN BEGIN
-
-    IF (opts.method EQ "normal") THEN smooth_file = pr_smooth_v30(in_files, opts, proc_year, mapscape)
-
-    IF (opts.method EQ "parallel-pixel") THEN smooth_file = pr_smooth_v30_parpix(in_files, opts, proc_year, mapscape)
-
+    print, "# ############################################ #"
+    print, "# Smoothing and processing DATA "
+    print, "# ############################################ #"
+    
     IF (opts.method EQ "parallel-line") THEN smooth_file = pr_init_processing_v30_parline(in_files, opts)
-;
-;  ENDIF
+    
+    print, "# ############################################ #"
+    print, "#                   DONE !                     #"
+    print, "# ############################################ #"
 
-  T2=systime(1)
-  ;    print,"start processing:", t1
-  ;    print,"End processing:",  t2
-  print, T2-t1, ' Seconds'
-  print, "done!"
-  heap_gc
+    print, "# Main PhenoRice processing"
 
-  ;endif else print ,"Smoothed VI file already esisting"
+    T2=systime(1)
+    print,"start processing:", T1
+    print,"start processing:", T2
+    print, t2-t1
 
-  ;- ---------------------------------------------------------- ;
-  ;-  Launch processing - pr_process v30 function
-  ;- ---------------------------------------------------------- ;
-
-  print, "# ############################################ #"
-  print, "# PERFORMING PHENOLOGICAL ANALYSIS "
-  print, "# ############################################ #"
-
-  print, "# Main PhenoRice processing"
-  ;  outrast_folder = path_create([out_folder, strtrim(proc_year,2),"raster"])  ; output folder for images
-;  IF (opts.method EQ "parallel-line") THEN out_proc = pr_init_process_v30_parline(in_files , out_filename , opts , $
-;      resize, resize_bbox, mapscape, overwrite_out)
-;  ;
-     ;
-  ;  T2=systime(2)
-  ;  print,"start processing:", T1
-  ;  print,"start processing:", T2
-  ;  print, t2-t1
-  ;  print, "done!"
-  heap_gc
-ENDFOR  ; End Cycle on years
-
-;- --------------------------------------------------------- ;
-;-  Launch postprocessing (TBD)
-;- --------------------------------------------------------- ;
+    heap_gc
+  ENDFOR  ; End Cycle on years
 
 END

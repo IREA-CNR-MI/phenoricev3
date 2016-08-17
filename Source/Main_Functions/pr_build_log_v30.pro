@@ -1,4 +1,6 @@
 PRO pr_build_log_v30,  opts , out_filename, in_files
+  COMPILE_OPT hidden
+  COMPILE_OPT IDL2
   ;    - --------------------------------------------------------- ;
   ;  -  Write log information
   ;  - --------------------------------------------------------- ;
@@ -9,7 +11,7 @@ PRO pr_build_log_v30,  opts , out_filename, in_files
 
   file_mkdir, file_dirname(out_logfile)
 
-  openw, u_log , out_logfile , /get_lun
+  openw , u_log , out_logfile , /get_lun
   printf, u_log, "-> Date of processing: " + systime() & printf, u_log
   printf, u_log, "------------------------------"
   printf, u_log, 'INPUT FILES:'
@@ -18,7 +20,7 @@ PRO pr_build_log_v30,  opts , out_filename, in_files
   printf, u_log, "-> Pixel QA file: "+in_files.Quality_file
   printf, u_log, "-> LST file: "+in_files.LST_file
   printf, u_log, "-> Land Cover file: "+in_files.LC_File
-  printf, u_log,''
+  printf, u_log, ""
   printf, u_log, "------------------------------"
   printf, u_log, 'OUTPUT FILES:'
   printf, u_log, "-> Output File: "+file_dirname(out_filename)
@@ -28,15 +30,15 @@ PRO pr_build_log_v30,  opts , out_filename, in_files
   printf, u_log, "------------------------------"
   printf, u_log,''
   printf, u_log, "------------------------------"
-  printf, u_log, 'INPUT PARAMETERS
+  printf, u_log, "INPUT PARAMETERS              "
   printf, u_log, "------------------------------"
   printf, u_log, "-> Processed Quarters: ", strtrim(string(proc_opts.SEL_SEASONS[0]),2) + "-" + strtrim(string(proc_opts.SEL_SEASONS[1]),2) $
-              + "-" + strtrim(string(proc_opts.SEL_SEASONS[2]),2) + "-" + strtrim(string(proc_opts.SEL_SEASONS[3]),2)
-  printf, u_log, "-> Start/End of 1st quarter: ", strtrim(proc_opts.doy_1q[0],2) + " / " + strtrim(proc_opts.doy_1q[1],2)                     
-  printf, u_log, "-> Start/End of 2nd quarter: ", strtrim(proc_opts.doy_2q[0],2) + " / " + strtrim(proc_opts.doy_2q[1],2) 
-  printf, u_log, "-> Start/End of 3rd quarter: ", strtrim(proc_opts.doy_3q[0],2) + " / " + strtrim(proc_opts.doy_3q[1],2) 
-  printf, u_log, "-> Start/End of 4th quarter: ", strtrim(proc_opts.doy_4q[0],2) + " / " + strtrim(proc_opts.doy_4q[1],2) 
-  printf, u_log,''
+    + "-" + strtrim(string(proc_opts.SEL_SEASONS[2]),2) + "-" + strtrim(string(proc_opts.SEL_SEASONS[3]),2)
+  printf, u_log, "-> Start/End of 1st quarter: ", strtrim(proc_opts.doy_1q[0],2) + " / " + strtrim(proc_opts.doy_1q[1],2)
+  printf, u_log, "-> Start/End of 2nd quarter: ", strtrim(proc_opts.doy_2q[0],2) + " / " + strtrim(proc_opts.doy_2q[1],2)
+  printf, u_log, "-> Start/End of 3rd quarter: ", strtrim(proc_opts.doy_3q[0],2) + " / " + strtrim(proc_opts.doy_3q[1],2)
+  printf, u_log, "-> Start/End of 4th quarter: ", strtrim(proc_opts.doy_4q[0],2) + " / " + strtrim(proc_opts.doy_4q[1],2)
+  printf, u_log, ""
   IF (opts.derivs EQ 1) THEN BEGIN
     printf, u_log, "-> Derivatives checks on maxs", $
       strtrim(opts.derivs_opt[0]),' - ',strtrim(opts.derivs_opt[1])
@@ -92,8 +94,6 @@ PRO pr_build_log_v30,  opts , out_filename, in_files
   ENDIF ELSE BEGIN
     printf, u_log, "-> NO Check for Minimum LST value for legal min"
   ENDELSE
-
-  ;TODO: Add log info of outputs locations
 
   close, u_log & free_lun,u_log
 
