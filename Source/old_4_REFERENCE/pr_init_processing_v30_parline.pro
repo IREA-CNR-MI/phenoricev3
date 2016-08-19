@@ -26,18 +26,28 @@ FUNCTION pr_init_processing_v30_parline, in_files, opts
   COMPILE_OPT hidden
 
   t1 = systime(1)
-  e = ENVI(/HEADLESS)   ; initialize envi
+  if opt.META EQ 0 then e = ENVI(/HEADLESS)   ; initialize envi
 
 ;- ------------------------------------------------------------------
 ; Open required rasters and get information from header files -------
 ;- ------------------------------------------------------------------
   print , '# --- PhenoRice Processing - please wait ! --- #'
-  in_vi      = e.OpenRaster(in_files.EVI_file)
-  in_quality = e.OpenRaster(in_files.QUALITY_file)
-  in_doy     = e.OpenRaster(in_files.DOY_file)
-  in_lc      = e.OpenRaster(in_files.lc_file)
-  in_NDFI    = e.OpenRaster(in_files.NDFI_file)
-  in_lst     = e.OpenRaster(in_files.LST_file)
+  
+  if opts.META EQ 0 then begin
+    in_vi      = e.OpenRaster(in_files.EVI_file)
+    in_quality = e.OpenRaster(in_files.QUALITY_file)
+    in_doy     = e.OpenRaster(in_files.DOY_file)
+    in_lc      = e.OpenRaster(in_files.lc_file)
+    in_NDFI    = e.OpenRaster(in_files.NDFI_file)
+    in_lst     = e.OpenRaster(in_files.LST_file)
+  endif else begin
+    in_vi      = out_rast_list.EVI_file
+    in_quality = out_rast_list.QUALITY_file
+    in_doy     = out_rast_list.DOY_file
+    in_lc      = e.OpenRaster(in_files.lc_file)
+    in_NDFI    = out_rast_list.NDFI_file
+    in_lst     = out_rast_list.LST_file
+  endelse
 
   IF FILE_TEST(in_files.smooth_file) EQ 1 AND opts.force_resmooth EQ 0 THEN BEGIN
     in_smooth   = e.OpenRaster(in_files.smooth_file)
@@ -93,7 +103,7 @@ FUNCTION pr_init_processing_v30_parline, in_files, opts
   IF (opts.sel_seasons[0] EQ 1) THEN opts.pos_quart_max [where (doys_reg GE opts.doy_1q[0]-7 AND  doys_reg LE opts.doy_1q[1])]  = 0  
   IF (opts.sel_seasons[1] EQ 1) THEN opts.pos_quart_max [where (doys_reg GE opts.doy_2q[0]-7 AND  doys_reg LE opts.doy_2q[1])]  = 1
   IF (opts.sel_seasons[2] EQ 1) THEN opts.pos_quart_max [where (doys_reg GE opts.doy_3q[0]-7 AND  doys_reg LE opts.doy_3q[1])]  = 2
-  IF (opts.sel_seasons[3] EQ 1) THEN opts.pos_quart_max [where (doys_reg GE pr_opts.doy_4q[0]-7 AND  opts LE opts.doy_4q[1])]  = 3
+  IF (opts.sel_seasons[3] EQ 1) THEN opts.pos_quart_max [where (doys_reg GE opts.doy_4q[0]-7 AND  doys_reg LE opts.doy_4q[1])]  = 3
   opts.pos_legit_maxs = opts.pos_quart_max NE -1
 
 ;- ------------------------------------------------------------------
@@ -119,6 +129,8 @@ FUNCTION pr_init_processing_v30_parline, in_files, opts
 
     nCPUs = !CPU.hw_ncpu     ; Find number of available cores
     ranges = intarr(ncpus, 2)
+    
+    
     
     ; find the input lines to be assigned to each CPU (or each block if working in debug mode)
     FOR cpu = 0, nCPUs-1 DO ranges[cpu,*] = [tot_lines/nCPUs*cpu,tot_lines/nCPUs*(cpu+1)-1]   ; Divide work among CPUs
@@ -206,7 +218,7 @@ FUNCTION pr_init_processing_v30_parline, in_files, opts
     ENDFOR ; End for on CPUs
 
     ; If not in debug mode, set a barrier, so that processing continues only after
-    ; all CPUs finish
+    ; all CPUs finish their 100 lines chunk
 
     IF opts.debug EQ 0 THEN BEGIN
       barrier_bridges, bridges
@@ -214,7 +226,7 @@ FUNCTION pr_init_processing_v30_parline, in_files, opts
       ;- Reconcile results of the different CPUs on a single matrix
       ;- ------------------------------------------------------------------
       FOR i=0, n_elements(bridges)-1 DO BEGIN
-        IF (i EQ 0 ) THEN BEGIN
+        IF (i EQ 0 and chunk EQ 0) THEN BEGIN
           out_matrix = bridges[i]->getvar('temp_matrix')
         ENDIF ELSE BEGIN
           pippo = bridges[i]->getvar('temp_matrix')

@@ -54,22 +54,29 @@ FUNCTION pr_crop_stage_max_v30, opts, smooth_pix, max_array, der_neg_pix, der_po
     ; For each nax, this gives out 0 if at least 3 out of 5 points before the max have positive der. AND 3 out of 5
     ; points after max have negative der. Otherwise, it gives 1 (condition not satisfied)
 
-    IF (opts.check_arr_max[0] EQ 1) THEN check_derivs= (total(der_pos_pix[der_pos_indexes],1) LT 3) $ 
-      OR (total(der_neg_pix[der_neg_indexes],1) LT 3) ELSE check_derivs=bytarr(count_maxs)         
+    IF (opts.check_arr_max[0] EQ 1) THEN BEGIN
+      check_derivs = (total(der_pos_pix[der_pos_indexes],1) LT 3) OR (total(der_neg_pix[der_neg_indexes],1) LT 3)
+      if (min(check_derivs)) EQ 1 then return, 200    ; if no maxs satisfy criteria, return to caller with code 200 (tells caller to skip pixel)
+    ENDIF ELSE check_derivs=bytarr(count_maxs)         
 
     ; For each nax, this gives out 1 if max below minimum threshold  (condition not satisfied)
-    vi_maxs = smooth_pix[pos_maxs]
-    IF (opts.check_arr_max[1] EQ 1) THEN vi_max_checks = (vi_maxs LT opts.VI_TR_MAX) ELSE vi_max_checks=bytarr(count_maxs)  
+    
+    IF (opts.check_arr_max[1] EQ 1) THEN BEGIN
+      vi_maxs = smooth_pix[pos_maxs]
+      vi_max_checks = (vi_maxs LT opts.VI_TR_MAX)
+      if (min(check_derivs + vi_max_checks)) EQ 1 then return, 200  ; if no maxs satisfy both criteria, return to caller
+    ENDIF ELSE vi_max_checks=bytarr(count_maxs)
 
     ; compute a "code" from results of the check. If all checks passed it stays at 0
-    check_tot_maxs = 10*check_derivs + 50*vi_max_checks ;+ 100*vi_dec_checks           
+    check_tot_maxs = check_derivs + vi_max_checks            
 
     ; build the array containing results on checks on maximums.
-    ; this is an array of dims (n° of bands). 0 = NO MAX
+    ; this is an array of dims (n° of bands).
+    ; 0 = NO MAX
     ; 1 = Good max
     ; >1 = bad max (not satisfying one or more criteria
 
-    max_array [pos_maxs] = check_tot_maxs  > 1 
+    max_array [pos_maxs] = (1 + check_tot_maxs) > 1 
 
     return, min(check_tot_maxs)        ; Return the minimum of the check array ( = 0 only if some max survived !!!!)
 

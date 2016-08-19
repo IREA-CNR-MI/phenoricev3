@@ -24,7 +24,7 @@
 ; :License: GPL>3.0
 ;-
 FUNCTION pr_smooth_pix_v30, opts, vi_pix, qa_pix, doy_pix, nb, doys_reg,$
-  x_vect, smooth_1, sum_index, smooth_2, err_pix
+   smooth_1, sum_index, smooth_2, err_pix, x_vect
   
   COMPILE_OPT idl2
   COMPILE_OPT hidden
@@ -46,14 +46,15 @@ FUNCTION pr_smooth_pix_v30, opts, vi_pix, qa_pix, doy_pix, nb, doys_reg,$
 
     check_arr4     = vi_pix_ord[[k-2, k-1, k+1,k+2]]
     check_arr6     = vi_pix_ord[[k-3,k-2, k-1, k+1,k+2,k+3]]
-    measure_errors = err_pix[[k-3,k-2, k-1, k+1,k+2,k+3]]
+    wgt            = err_pix[[k-3,k-2, k-1, k+1,k+2,k+3]]
     MED_VAL        = mean(CHECK_ARR4)
     STDEV_val      = stdev(CHECK_ARR4)
 
     IF (vi_pix_ord[k] LT MED_VAL-2*STDEV_val) OR  (vi_pix_ord[k] GT MED_VAL+2*STDEV_val) THEN BEGIN
 
       ; OPTION 1 GAP FILLING:  SECOND ORDER POLINOMIAL
-      result       = poly_fit(x_vect, CHECK_ARR6, 2, MEASURE_ERRORS=measure_errors, Yfit = Yfit,/DOUBLE,status=status)
+      ;result       = poly_fit(x_vect, CHECK_ARR6, 2, MEASURE_ERRORS=measure_errors, Yfit = Yfit,/DOUBLE,status=status)
+      result = polyfitfast(x_vect, CHECK_ARR6, 2, Yfit, w = wgt)
       err_pix[k]   = 3000
       vi_pix_fl[k] = Yfit[opts.win_dim_r]
 
@@ -63,15 +64,15 @@ FUNCTION pr_smooth_pix_v30, opts, vi_pix, qa_pix, doy_pix, nb, doys_reg,$
 
   ; 1) SAVGOL - first iteration - use weights derived from quality flags
   IF (smoother EQ "lowess") THEN BEGIN
-    lowess,doy_pix_ord, vi_pix_fl, 8*(opts.win_dim_r+1), smooth_1, order = 2, WEIGHT = 1.0/err_pix
+    lowess,doy_pix_ord, vi_pix_fl, 8*(opts.win_dim_r+1), smooth_1, order = 2, WEIGHT = err_pix
   ENDIF ELSE BEGIN
 
     FOR k=opts.win_dim_l, nb-(opts.win_dim_r+1) DO BEGIN
 
       smooth_indexes = k+sum_index
       Y              = vi_pix_fl[smooth_indexes]
-      x_vect         = doy_pix_ord[smooth_indexes]
-      result         = poly_fit(x_vect, Y, 2, MEASURE_ERRORS=err_pix[smooth_indexes], Yfit = Yfit,status=status)
+      X              = doy_pix_ord[smooth_indexes]
+      result = polyfitfast(X, Y, 2, Yfit, w = 1.0/err_pix[smooth_indexes])
       smooth_1[K]    = Yfit[opts.win_dim_r]
 
     ENDFOR
@@ -99,17 +100,18 @@ FUNCTION pr_smooth_pix_v30, opts, vi_pix, qa_pix, doy_pix, nb, doys_reg,$
   ; redo the smoothing
 
   IF (smoother EQ "lowess") THEN BEGIN
-    lowess,doy_pix_ord, vi_pix_fl, 8*(opts.win_dim_r+1), smooth_2, order = 2, WEIGHT = 1.0/err_pix, NEWX = doys_reg
+    lowess,doy_pix_ord, vi_pix_fl, 8*(opts.win_dim_r+1), smooth_2, order = 2, WEIGHT = err_pix, NEWX = doys_reg
   ENDIF ELSE BEGIN
 
     FOR k = opts.win_dim_l, nb-(opts.win_dim_r+1) DO BEGIN
 
       smooth_indexes = k+sum_index
-      Y              = vi_pix_fl[smooth_indexes]
-      x_vect         = doy_pix_ord[smooth_indexes]
-      x_vect_reg     = doys_reg[smooth_indexes[opts.win_dim_r]]
-      result         = poly_fit(x_vect, Y, 2, MEASURE_ERRORS=err_pix[smooth_indexes], Yfit = Yfit,status=status)
-      smooth_2[K]    = result[0]+result[1]*x_vect_reg+result[2]*(x_vect_reg^2)
+      Y           = vi_pix_fl[smooth_indexes]
+      X           = doy_pix_ord[smooth_indexes]
+      X_reg       = doys_reg[smooth_indexes[opts.win_dim_r]]
+      ;result         = poly_fit(x_vect, Y, 2, MEASURE_ERRORS=err_pix[smooth_indexes], Yfit = Yfit,status=status)
+      result      = polyfitfast(X, Y, 2, Yfit, w = err_pix[smooth_indexes])
+      smooth_2[K] = result[0] + result[1]*X_reg + result[2]*(X_reg^2)
 
     ENDFOR
 

@@ -18,7 +18,7 @@
 ;
 ; :License: GPL>3.0
 ;-
-FUNCTION pr_smooth_lst_v30, lst_pix,nb
+FUNCTION pr_smooth_lst_v30, lst_pix, nb
   COMPILE_OPT hidden
   COMPILE_OPT IDL2
 
