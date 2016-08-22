@@ -339,7 +339,7 @@
       eosmin         : 1,  $   ; Length of season (EOS to SOS)
       meta           : META, $
       force_rebuild  : force_rebuild, $
-      cpu_n          : ncpus $
+      ncpus          : ncpus $
 
     }
 
