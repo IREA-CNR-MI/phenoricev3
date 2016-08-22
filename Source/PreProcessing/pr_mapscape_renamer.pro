@@ -21,21 +21,21 @@ out_folders = ['VI_16Days_250m/EVI',$
 
 ; Rename MAPSCAPE files to conform to Phenorice conventions
 
-for band = 0L, n_elements(orig_suffixes)-1 do begin
+FOR band = 0L, n_elements(orig_suffixes)-1 DO BEGIN
 
   print, 'Renaming ' + orig_suffixes[band] + 'Files'
   pattern = '*'+orig_suffixes[band]     ; Set the patern to search for one of theinputs (e.g., NDVI )
   in_files = file_search(input_mapscape_folder+path_sep()+pattern, /TEST_REGULAR)
   out_dir = input_mapscape_folder + path_sep() + out_folders[band]
   FILE_MKDIR, out_dir
-  foreach in_file, in_files do begin
+  FOREACH in_file, in_files DO BEGIN
 
     split_bnames = strsplit(file_basename(in_file), '_', /extract)
-    if (orig_suffixes[band] EQ  'pixel_reliability') OR (orig_suffixes[band] EQ  'vi_usefulness') OR (orig_suffixes[band] EQ 'DOY_PIX') then begin
+    IF (orig_suffixes[band] EQ  'pixel_reliability') OR (orig_suffixes[band] EQ  'vi_usefulness') OR (orig_suffixes[band] EQ 'DOY_PIX') THEN BEGIN
       yeardoy = split_bnames[n_elements(split_bnames)-3]
-    endif else begin
+    ENDIF ELSE BEGIN
       yeardoy = split_bnames[n_elements(split_bnames)-2]
-    endelse
+    ENDELSE
 
     out_file = out_dir + path_sep()+ 'MAPSCAPEIN_'+out_suffixes[band]+'_'+strmid(yeardoy, 0,4)+'_'+strmid(yeardoy, 4,3)
     ;      file_copy, in_file, out_file+'.dat', /OVERWRITE
@@ -47,9 +47,9 @@ for band = 0L, n_elements(orig_suffixes)-1 do begin
     file_move, in_file+'.hdr', out_file + '.hdr'
     file_move, in_file+'.sml', out_file + '.sml'
 
-  endforeach
+  ENDFOREACH
 
-endfor
+ENDFOR
 
 ; Rename MAPSCAPE smoothed files to conform to Phenorice conventions
 print, 'Renaming Smoothed EVI Files'
@@ -57,7 +57,7 @@ pattern = '*EVI_smth'
 in_files = file_search(input_smoothed_folder+path_sep()+pattern, /TEST_REGULAR)
 out_dir = input_mapscape_folder + path_sep() + 'EVI_Smoothed'
 FILE_MKDIR,out_dir
-foreach in_file, in_files do begin
+FOREACH in_file, in_files DO BEGIN
   split_bnames = strsplit(file_basename(in_file), '_', /extract)
   yeardoy = split_bnames[n_elements(split_bnames)-3]
   out_file = out_dir + path_sep()+ 'MAPSCAPEIN_EVIsmooth_'+strmid(yeardoy, 0,4)+'_'+strmid(yeardoy, 4,3)
@@ -69,6 +69,6 @@ foreach in_file, in_files do begin
   file_move, in_file, out_file+'.dat'
   file_move, in_file+'.hdr', out_file + '.hdr'
   file_move, in_file+'.sml', out_file + '.sml'
-endforeach
+ENDFOREACH
 print, 'Finished'
-end
+END

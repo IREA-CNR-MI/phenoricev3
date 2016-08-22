@@ -1,5 +1,6 @@
 function SetDifference, a, b
-
+  COMPILE_OPT IDL2
+  COMPILE_OPT hidden
   ; = a and (not b) = elements in A but not in B
 
   mina = min(a, Max=maxa)
@@ -11,7 +12,9 @@ function SetDifference, a, b
 end
 
 function SetIntersection, a, b
-
+  COMPILE_OPT IDL2
+  COMPILE_OPT hidden
+  
   ; Find the intersection of the ranges.
   mina = min(a, Max=maxa)
   minb = min(b, Max=maxb)

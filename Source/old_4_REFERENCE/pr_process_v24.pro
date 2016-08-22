@@ -23,7 +23,7 @@
 ;
 ;License GPL(>2)
 ;-
-function pr_process_v30, in_files , out_filename , pr_opts , $
+function pr_process_v24,in_files , out_filename , pr_opts , $
   avg_criteria,max_criteria, min_criteria, out_logfile, proc_year,  note, resize, $
   start_x, end_x,start_y, end_y, MAPSCAPE
 

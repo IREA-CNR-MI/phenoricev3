@@ -124,7 +124,9 @@
 ;  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                            ;
 ;******************************************************************************************;
 FUNCTION ProgramRootDir, OneUp=oneup, TwoUp=twoup, NoMark=nomark
-
+  COMPILE_OPT IDL2
+  COMPILE_OPT hidden
+  
   ; Return to caller on an error.
   On_Error, 2
 
