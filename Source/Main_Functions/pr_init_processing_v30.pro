@@ -148,7 +148,7 @@ FUNCTION pr_init_processing_v30, in_files, opts, out_rast_list, ind_year
       opts.pos_legit_maxs = intarr(nb) 
       opts.pos_quart_max  = intarr(nb) - 1
       opts.check_arr_max  = [opts.derivs,opts.max_value, opts.decrease]
-      opts.check_arr_min  = [opts.min_value,opts.growth, opts.flood  $ ; Array specisying which min criteria should be considered
+      opts.check_arr_min  = [opts.min_value,opts.growth, opts.flood, $ ; Array specisying which min criteria should be considered
                             opts.max_after, opts.lst] 
   endelse
 
