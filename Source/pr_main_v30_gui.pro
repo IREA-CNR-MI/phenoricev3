@@ -354,8 +354,10 @@
   ;- --------------------------------------------------------- ;
   ;-  Start Cycling on years
   ;- --------------------------------------------------------- ;
+  ind_year = 0
+  
   FOR proc_year = end_year, start_year, -1 DO BEGIN
-
+  
     opts.proc_year = proc_year
     t1 = systime(2)   ; Get starting time
     print, "# ############################################ #"
@@ -399,7 +401,7 @@
     print, "# Smoothing and processing DATA "
     print, "# ############################################ #"
 
-    IF (opts.method EQ "parallel-line") THEN results = pr_init_processing_v30(in_files, opts,out_rast_list)
+    IF (opts.method EQ "parallel-line") THEN results = pr_init_processing_v30(in_files, opts,out_rast_list, ind_year)
 
     print, "# ############################################ #"
     print, "#                   DONE !                     #"
@@ -409,7 +411,7 @@
 
     T2=systime(1)
     print,"Total processing time: ", (string(t2-t1)).trim(), " seconds"
-
+    ind_year = ind_year +1
     heap_gc
   ENDFOR  ; End Cycle on years
 
