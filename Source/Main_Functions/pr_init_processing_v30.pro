@@ -20,7 +20,7 @@
 ;
 ; :License: GPL>3.0
 ;-
-FUNCTION pr_init_processing_v30, in_files, opts, out_rast_list
+FUNCTION pr_init_processing_v30, in_files, opts, out_rast_list, ind_year
 
   COMPILE_OPT idl2
   COMPILE_OPT hidden
@@ -73,6 +73,12 @@ FUNCTION pr_init_processing_v30, in_files, opts, out_rast_list
   ; Get the acquisition DOYS from the header
   getheader.key = 'Wavelength' &  getheader.execute
   doys_reg  = getheader.value
+  
+  ; add 8 to the reported acquisition DOYs --> done because usually the real DOYs are
+  ; in the last part of the period, so that when "substituting" real doy with theoretical
+  ; we get less "real" difference
+
+  doys_reg = fix(doys_reg) + 8
 
   ; Get number of bands and number of columns
   nb    = in_vi.nbands
@@ -123,21 +129,34 @@ FUNCTION pr_init_processing_v30, in_files, opts, out_rast_list
 ; to define / redefine them later several times
 ;- ------------------------------------------------------------------
 
-  addopts = {$; array indexes
-    der_ind        : indgen (opts.derivs_opt [0]) + 1  ,$  ; Positions where derivatives should be checked for MAX identification
-    maxdec_ind     : indgen (opts.decrease_win)   + 1  ,$ ; Positions where derivatives should be checked for VI decrease
-    growth_ind     : indgen (opts.growth_opt [0]) + 1  ,$ ; positions to be checked to identify consistent growth after minimum
-    vi_max_ind     : indgen (opts.max_aft_win[1]  - opts.max_aft_win[0]+1)+opts.max_aft_win[0], $ ; positions to be checked to identify if max is present in suitable period after min
-    selquarts      : where  (opts.sel_seasons EQ 1) ,$
-    n_sel_season   : total  (opts.sel_seasons) ,$
-    pos_legit_maxs : intarr(nb) , $
-    pos_quart_max  : intarr(nb) - 1, $
-    check_arr_max  : [opts.derivs,opts.max_value, opts.decrease], $
-    check_arr_min  : [opts.min_value,opts.growth, opts.flood, $  ; Array specisying which min criteria should be considered
-    opts.max_after, opts.lst] $
-  }
-
-  opts = struct_addtags(opts,addopts)
+  if (ind_year EQ 0) then begin
+    addopts = {$; array indexes
+      der_ind        : indgen (opts.derivs_opt [0]) + 1  ,$  ; Positions where derivatives should be checked for MAX identification
+      maxdec_ind     : indgen (opts.decrease_win)   + 1  ,$ ; Positions where derivatives should be checked for VI decrease
+      growth_ind     : indgen (opts.growth_opt [0]) + 1  ,$ ; positions to be checked to identify consistent growth after minimum
+      vi_max_ind     : indgen (opts.max_aft_win[1]  - opts.max_aft_win[0]+1)+opts.max_aft_win[0], $ ; positions to be checked to identify if max is present in suitable period after min
+      selquarts      : where  (opts.sel_seasons EQ 1) ,$
+      n_sel_season   : total  (opts.sel_seasons) ,$
+      pos_legit_maxs : intarr(nb) , $
+      pos_quart_max  : intarr(nb) - 1, $
+      check_arr_max  : [opts.derivs,opts.max_value, opts.decrease], $
+      check_arr_min  : [opts.min_value,opts.growth, opts.flood, $  ; Array specisying which min criteria should be considered
+      opts.max_after, opts.lst] $
+    }
+    opts = struct_addtags(opts,addopts)
+  endif else begin
+      opts.der_ind        = indgen (opts.derivs_opt [0]) + 1    ; Positions where derivatives should be checked for MAX identification
+      opts.maxdec_ind     = indgen (opts.decrease_win)   + 1   ; Positions where derivatives should be checked for VI decrease
+      opts.growth_ind     = indgen (opts.growth_opt [0]) + 1   ; positions to be checked to identify consistent growth after minimum
+      opts.vi_max_ind     = indgen (opts.max_aft_win[1] - opts.max_aft_win[0]+1)+opts.max_aft_win[0] ; positions to be checked to identify if max is present in suitable period after min
+      opts.selquarts      = where  (opts.sel_seasons EQ 1)
+      opts.n_sel_season   = total  (opts.sel_seasons)
+      opts.pos_legit_maxs = intarr(nb) 
+      opts.pos_quart_max  = intarr(nb) - 1
+      opts.check_arr_max  = [opts.derivs,opts.max_value, opts.decrease]
+      opts.check_arr_min  = [opts.min_value,opts.growth, opts.flood, $ ; Array specisying which min criteria should be considered
+                            opts.max_after, opts.lst] 
+  endelse
 
   ; Identify positions of legitimate max (i.e., max in the periods defined on the basiss of
   ; user defined seasons )
@@ -394,13 +413,13 @@ FUNCTION pr_init_processing_v30, in_files, opts, out_rast_list
 
   ; get tagnames of output bands
   tagnames = tag_names(opts)
-  tagnames_out = tagnames [42:51]
+  tagnames_out = tagnames [45:54]
   bnames = strarr(nb_out)
 
   ; Cycle on possible output bands and get bnames only for those selected by the user
   out_ind = 0
   FOREACH tagout, tagnames_out, tagind DO BEGIN
-    IF opts.(42+tagind) EQ 1 THEN BEGIN
+    IF opts.(45+tagind) EQ 1 THEN BEGIN
       IF tagind EQ 0 THEN bnames[tagind] = bandhash[tagout] ELSE BEGIN
         nb_save    = opts.n_sel_season
         band_ind   = 1+[nb_save*(out_ind-1):(nb_save*(out_ind)-1)]

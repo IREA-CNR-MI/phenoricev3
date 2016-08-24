@@ -25,6 +25,7 @@ FUNCTION pr_process_pix_v30, opts, smooth_pix, NDFI_pix, lst_pix, doy_pix, nb, d
 
   COMPILE_OPT hidden
   COMPILE_OPT IDL2
+  COMPILE_OPT Strictarrsubs
 
   ; INitialize outputs arrays to -999
 
@@ -161,9 +162,9 @@ FUNCTION pr_process_pix_v30, opts, smooth_pix, NDFI_pix, lst_pix, doy_pix, nb, d
               IF (check  GT 0) THEN BEGIN   ; If check not passed, then set maxdoy, mindoy etc to -999
                 out_mindoy [ind_season]       = -999
                 out_maxdoy [ind_season]        = -999
-;                out_halfhead[ind_season]      = -999
-;                min_array[max(pos_min_quart)] = -999
-;                max_array[max(pos_min_quart)] = -999
+                ;                out_halfhead[ind_season]      = -999
+                ;                min_array[max(pos_min_quart)] = -999
+                ;                max_array[max(pos_min_quart)] = -999
 
               ENDIF
 
@@ -172,6 +173,28 @@ FUNCTION pr_process_pix_v30, opts, smooth_pix, NDFI_pix, lst_pix, doy_pix, nb, d
           ENDFOREACH
 
         ENDIF
+
+        ok_seasons = where(temp_mindoy NE -999, count_okseasons)
+
+        IF (count_okseasons NE 0) THEN BEGIN
+
+          IF (opts.shp_check EQ 1) THEN BEGIN
+
+            check_shp = pr_checkshape(opts, smooth_pix, temp_mindoy, temp_maxdoy, doys_reg, ok_seasons)
+            check_failed = where(check_shp EQ 0, count_failed)
+            
+            IF (count_failed NE 0) THEN BEGIN
+
+              out_mindoy [where(check_shp EQ 0)] = -999
+              out_maxdoy [where(check_shp EQ 0)] = -999
+
+            ENDIF
+
+          ENDIF
+
+        ENDIF
+
+
 
         ;- --------------------------------------------------------- ;
         ;- Compute number of identified rice seasons
@@ -198,7 +221,7 @@ FUNCTION pr_process_pix_v30, opts, smooth_pix, NDFI_pix, lst_pix, doy_pix, nb, d
               pos_max     = temp_maxdoy[ind_season] & val_max = smooth_pix[pos_max]
               val_min_doy = out_mindoy[ind_season]
 
-              ; "flowering" date: hlf position of where vi above 90th percentile ! 
+              ; "flowering" date: hlf position of where vi above 90th percentile !
 
               HalfHead = where((smooth_pix[pos_min:(pos_max+opts.decrease_win)] GE (val_min + 0.9 * (val_max-val_min))) AND (smooth_pix[pos_min:(pos_max+opts.decrease_win)] GE 0), countHalfHead)
               out_halfhead [ind_season] = mean(8*HalfHead)+ doys_reg[pos_min]

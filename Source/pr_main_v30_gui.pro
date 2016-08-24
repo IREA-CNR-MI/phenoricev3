@@ -25,17 +25,20 @@
   ; Set some options for test processing
   ;- --------------------------------------------------------- ;
   test_data      = 1             ; Leads to using default input data and parameters (for testing purposes)
-  test_folder    = 'IT_Clipped'  ; testing data folder
-  mapscape       = 0             ; Specify to use "mapscape-like" input files --> Leads to changes in NODATA values and (possibly)
+  test_folder    = 'PHL_Clipped'  ; testing data folder
+  mapscape       = 1             ; Specify to use "mapscape-like" input files --> Leads to changes in NODATA values and (possibly)
   ; generate smoothed file from MAPSCAPE data!!!
-  sel_seasons    = [1,1,1,0]
+  sel_seasons    = [1,1,1,1]
   doy_1q         = [0,90]        ; -> Start and end DOYs of each "season"
   doy_2q         = [91,180]
-  doy_3q         = [181,260]
+  doy_3q         = [181,270]
   doy_4q         = [271,365]
 
-  start_year     = 2015          ; Start and end year for the test run
-  end_year       = 2015
+  start_year     = 2012          ; Start and end year for the test run
+  end_year       = 2013
+
+  shp_check      = 0
+  check_corr     = 0.9
 
   ;- --------------------------------------------------------- ;
   ; Set General processing options: number of cpus, overwriting, reporocessing ,etc.
@@ -44,18 +47,18 @@
   ncpus          = !CPU.hw_ncpu - 1 ; Find number of available cores - KEEP ONE FREE TO AVOID OVERLOAD !!!!!
   method         = 'parallel-line'; Processing method *"parallel-line" (faster - difficult to debug ! ))
   chunksize      = 50             ; Number of lines to assign to each core: the higher, the fastest, but the
-                                  ; highest also the memory load !
+  ; highest also the memory load !
 
   META           = 1             ; Specify if saving input multitemporal files or just use "virtual" in-memory files
   ; referring to the input single-data - avoids creating huge "physical" input files !
 
-  force_rebuild  = 0             ; Flag. if set to 1 the input files are rebuilt (overwritten) even if already existing
+  force_rebuild  = 1             ; Flag. if set to 1 the input files are rebuilt (overwritten) even if already existing
   force_resmooth = 1             ; Flag. if set to 1 the smoothed file is rebuilt (overwritten) even if already existing
   overwrite_out  = 1             ; If = 0, then trying to overwrite existing outputs is NOT POSSIBLE
   fullout        = 1             ; Specify if also building an output file containing all bands - obsolete !
 
   debug          = 0             ; Specify if using "standard" processing for debug purposes.
-                                 ; If set to 1, parallel processing is not used so that the debug is easier
+  ; If set to 1, parallel processing is not used so that the debug is easier
 
 
   ; TODO: substitute with automatic resize of imagery on the basis of an input shape/raster file.
@@ -154,6 +157,11 @@
       lst            : 1   ,$           ; Check if min occurs in a period with LST above a given threshold ? ( 1 = Yes)
       lst_thresh     : 15,     $ ; Threshold for LST (in °C)
 
+      ; criteria for vi shape checks
+      shp_check      : shp_check, $
+      check_shape_meth: "linear", $
+      check_corr     : check_corr, $
+
       ;---- Selected outputs
       n_rice         : 1, $   ; Number of rice seasons
       max            : 0, $   ; DOY of Max EVI
@@ -178,7 +186,7 @@
     ;- --------------------------------------------------------------- ;
 
     ; TODO: Create a IDL Widget GUI
-    R_GUI_function_path = programrootdir()+'Source'+path_sep()+'phenorice'+path_sep()+'source'+path_sep()+'Accessoires'+path_sep()+'Phenorice_GUI.R'
+    R_GUI_function_path = programrootdir()+'Accessoires'+path_sep()+'Phenorice_GUI.R'
     launch_string = 'Rscript'+' '+ '"'+R_GUI_function_path +'"'+' "'+file_dirname(R_GUI_function_path)+ '"'
     spawn,launch_string, out_folder
     out_folder = strmid(out_folder, 5,(strlen(out_folder)-6))    ; Get the out_folder from the GUI
@@ -339,7 +347,7 @@
       eosmin         : 1,  $   ; Length of season (EOS to SOS)
       meta           : META, $
       force_rebuild  : force_rebuild, $
-      cpu_n          : ncpus $
+      ncpus          : ncpus $
 
     }
 
@@ -354,6 +362,8 @@
   ;- --------------------------------------------------------- ;
   ;-  Start Cycling on years
   ;- --------------------------------------------------------- ;
+  ind_year = 0
+
   FOR proc_year = end_year, start_year, -1 DO BEGIN
 
     opts.proc_year = proc_year
@@ -367,27 +377,25 @@
     ;- --------------------------------------------------------- ;
     print, "# BUILDING INPUT MULTITEMPORAL FILES"
     print, "# ############################################ #"
-    smooth_dirname = in_ts_folder+path_sep()+(string(proc_year)).trim()+path_sep()+'VI_Smoothed'
-    smooth_file = smooth_dirname+path_sep()+'VI_smooth_'+strtrim(string(proc_year), 2)+'.dat'
-    file_mkdir, smooth_dirname
-
+    
     ; Out file name (Actually, a prefixc to which indication about processing year is appended
-    out_filename = path_create([file_dirname(programrootdir()), 'test_data', test_folder,'Outputs','Phenorice_out_'+(string(proc_year)).trim()])
+    out_filename = path_create([file_dirname(programrootdir()), 'test_data', test_folder,'Outputs',(string(proc_year)).trim(),'Phenorice_out_'])
     file_mkdir,file_dirname(out_filename)
 
     ; Initialize structure of file names and of metaraster files (used if "META")
     out_files_list = {evi_file: "", ndfi_file:"", blue_file :"", $
       rely_file:"", ui_file: "", doy_file: "", lst_file:"", $
-      quality_file: "", smooth_file : smooth_file , lc_file : in_lc_file, $
+      quality_file: "", smooth_file : "" , lc_file : in_lc_file, $
       out_filename : out_filename}
 
     out_rast_list = {evi_file: obj_new(), ndfi_file:obj_new(), blue_file :obj_new(), $
       rely_file:obj_new(), ui_file: obj_new(), doy_file: obj_new(), lst_file:obj_new(), $
-      quality_file: obj_new(), smooth_file : smooth_file , lc_file : in_lc_file, $
+      quality_file: obj_new(), smooth_file : "" , lc_file : in_lc_file, $
       out_filename : out_filename}
 
     in_files = pr_build_inputs_v30(or_ts_folder, in_ts_folder, in_bands_or, in_bands_derived, out_filename, $
       folder_suffixes_or, opts, nodatas_or, META, out_files_list, out_rast_list, force_rebuild)
+
     T2=systime(1)
     print,"Time to build files: ", (string(t2-t1)).trim(), " seconds"
 
@@ -399,7 +407,7 @@
     print, "# Smoothing and processing DATA "
     print, "# ############################################ #"
 
-    IF (opts.method EQ "parallel-line") THEN results = pr_init_processing_v30(in_files, opts,out_rast_list)
+    IF (opts.method EQ "parallel-line") THEN results = pr_init_processing_v30(in_files, opts,out_rast_list, ind_year)
 
     print, "# ############################################ #"
     print, "#                   DONE !                     #"
@@ -409,7 +417,7 @@
 
     T2=systime(1)
     print,"Total processing time: ", (string(t2-t1)).trim(), " seconds"
-
+    ind_year = ind_year +1
     heap_gc
   ENDFOR  ; End Cycle on years
 
