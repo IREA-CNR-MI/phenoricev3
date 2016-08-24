@@ -36,6 +36,9 @@
 
   start_year     = 2015          ; Start and end year for the test run
   end_year       = 2015
+  
+  shp_check      = 1
+  check_corr     = 0.9
 
   ;- --------------------------------------------------------- ;
   ; Set General processing options: number of cpus, overwriting, reporocessing ,etc.
@@ -50,11 +53,11 @@
   ; referring to the input single-data - avoids creating huge "physical" input files !
 
   force_rebuild  = 0             ; Flag. if set to 1 the input files are rebuilt (overwritten) even if already existing
-  force_resmooth = 1             ; Flag. if set to 1 the smoothed file is rebuilt (overwritten) even if already existing
+  force_resmooth = 0             ; Flag. if set to 1 the smoothed file is rebuilt (overwritten) even if already existing
   overwrite_out  = 1             ; If = 0, then trying to overwrite existing outputs is NOT POSSIBLE
   fullout        = 1             ; Specify if also building an output file containing all bands - obsolete !
 
-  debug          = 0             ; Specify if using "standard" processing for debug purposes.
+  debug          = 1             ; Specify if using "standard" processing for debug purposes.
                                  ; If set to 1, parallel processing is not used so that the debug is easier
 
 
@@ -153,6 +156,11 @@
       max_aft_win    : [50/8,114/8],$;  First index: min number of compositing periods between min and max;
       lst            : 1   ,$           ; Check if min occurs in a period with LST above a given threshold ? ( 1 = Yes)
       lst_thresh     : 15,     $ ; Threshold for LST (in °C)
+      
+      ; criteria for vi shape checks
+      shp_check      : shp_check, $
+      check_shape_meth: "linear", $
+      check_corr     : check_corr, $
 
       ;---- Selected outputs
       n_rice         : 1, $   ; Number of rice seasons

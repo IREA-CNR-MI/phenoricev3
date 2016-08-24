@@ -407,13 +407,13 @@ FUNCTION pr_init_processing_v30, in_files, opts, out_rast_list, ind_year
 
   ; get tagnames of output bands
   tagnames = tag_names(opts)
-  tagnames_out = tagnames [42:51]
+  tagnames_out = tagnames [45:54]
   bnames = strarr(nb_out)
 
   ; Cycle on possible output bands and get bnames only for those selected by the user
   out_ind = 0
   FOREACH tagout, tagnames_out, tagind DO BEGIN
-    IF opts.(42+tagind) EQ 1 THEN BEGIN
+    IF opts.(45+tagind) EQ 1 THEN BEGIN
       IF tagind EQ 0 THEN bnames[tagind] = bandhash[tagout] ELSE BEGIN
         nb_save    = opts.n_sel_season
         band_ind   = 1+[nb_save*(out_ind-1):(nb_save*(out_ind)-1)]

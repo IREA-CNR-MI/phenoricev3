@@ -75,8 +75,9 @@ FUNCTION pr_process_v30_parline, opts, lines, data_lc, data_VI, data_QA, data_DO
       else dove_vi_na  = where(data_vi EQ -3000, count_na)
     data_errors = 200 * (data_QA EQ 0) + 1100 * (data_QA EQ 1) + 3000* (data_QA EQ 2)
     IF (count_na NE 0 ) THEN data_errors [dove_vi_na] = 7000
+    data_errors = 1.0/data_errors
   ENDIF
-  data_errors = 1.0/data_errors
+  
   
   ;- ------------------------------------------------------------------
   ; Cycle on the lines of the "data chunk" and run the smoothing
@@ -179,7 +180,7 @@ FUNCTION pr_process_v30_parline, opts, lines, data_lc, data_VI, data_QA, data_DO
 
           FOR outs = 0, (n_tags(out_data)-2) DO BEGIN
 
-            IF opts.(43+outs) EQ 1 THEN BEGIN
+            IF opts.(46+outs) EQ 1 THEN BEGIN
               band_ind = 1 + [(opts.n_sel_Season*out_ind):(opts.n_sel_Season*(out_ind+1)-1)]
               IF opts.META THEN out_matrix[pixel, line, band_ind] = out_data.(outs+1) ELSE out_matrix[band_ind, pixel, line] = out_data.(outs+1)
               out_ind  = out_ind + 1
