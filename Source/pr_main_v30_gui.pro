@@ -25,19 +25,19 @@
   ; Set some options for test processing
   ;- --------------------------------------------------------- ;
   test_data      = 1             ; Leads to using default input data and parameters (for testing purposes)
-  test_folder    = 'IT_Clipped'  ; testing data folder
-  mapscape       = 0             ; Specify to use "mapscape-like" input files --> Leads to changes in NODATA values and (possibly)
+  test_folder    = 'bhogendra'  ; testing data folder
+  mapscape       = 1             ; Specify to use "mapscape-like" input files --> Leads to changes in NODATA values and (possibly)
   ; generate smoothed file from MAPSCAPE data!!!
-  sel_seasons    = [1,1,1,0]
+  sel_seasons    = [1,1,1,1]
   doy_1q         = [0,90]        ; -> Start and end DOYs of each "season"
   doy_2q         = [91,180]
-  doy_3q         = [181,260]
+  doy_3q         = [181,270]
   doy_4q         = [271,365]
 
-  start_year     = 2015          ; Start and end year for the test run
-  end_year       = 2015
+  start_year     = 2012          ; Start and end year for the test run
+  end_year       = 2012
   
-  shp_check      = 1
+  shp_check      = 0
   check_corr     = 0.9
 
   ;- --------------------------------------------------------- ;
@@ -186,7 +186,7 @@
     ;- --------------------------------------------------------------- ;
 
     ; TODO: Create a IDL Widget GUI
-    R_GUI_function_path = programrootdir()+'Source'+path_sep()+'phenorice'+path_sep()+'source'+path_sep()+'Accessoires'+path_sep()+'Phenorice_GUI.R'
+    R_GUI_function_path = programrootdir()+'Accessoires'+path_sep()+'Phenorice_GUI.R'
     launch_string = 'Rscript'+' '+ '"'+R_GUI_function_path +'"'+' "'+file_dirname(R_GUI_function_path)+ '"'
     spawn,launch_string, out_folder
     out_folder = strmid(out_folder, 5,(strlen(out_folder)-6))    ; Get the out_folder from the GUI

@@ -48,7 +48,7 @@ FUNCTION pr_process_v30_parline, opts, lines, data_lc, data_VI, data_QA, data_DO
   sum_index = indgen(opts.win_dim_r*2+1)-opts.win_dim_r
   smooth_1  = (smooth_2 = fltarr(nb))
 
-  IF opts.mapscape EQ 1 THEN data_DOY[data_DOY EQ -1] = 32767
+  IF opts.mapscape EQ 1 THEN data_DOY[where(data_DOY EQ -1)] = 32767
 
   ;- ------------------------------------------------------------------
   ; Reshuffle DOYS in case more than one year is on the required time serie
@@ -67,7 +67,10 @@ FUNCTION pr_process_v30_parline, opts, lines, data_lc, data_VI, data_QA, data_DO
   ENDIF
 
   IF (max(years) GT opts.proc_year) THEN BEGIN    ; If some bands of next year required, compute their doy by adding 365
-    data_doy [where(years EQ opts.proc_year +1),*, *] = data_DOY [where(years EQ opts.proc_year +1),*, *] + 365
+    
+    IF opts.meta THEN data_doy [*,*,where(years EQ opts.proc_year +1)] = data_DOY [*,*,where(years EQ opts.proc_year +1)] + 365 $
+      ELSE data_doy [where(years EQ opts.proc_year +1),*, *] = data_DOY [where(years EQ opts.proc_year +1),*, *] + 365
+    
   ENDIF
 
   IF smooth_flag EQ 0 THEN BEGIN
@@ -116,7 +119,7 @@ FUNCTION pr_process_v30_parline, opts, lines, data_lc, data_VI, data_QA, data_DO
         ; -------------------------------------------------
 
           ; Check on doys: doys > 400 = NODATA in DOY image --> set them to the doy of the composite
-          IF opts.mapscape EQ 0 THEN BEGIN
+          IF opts.mapscape NE 1000 THEN BEGIN
             BAD_DOY = where(abs(DOY_PIX ) GT 1000, count_bad_doy)
           ENDIF ELSE BEGIN
             BAD_DOY = where(DOY_PIX EQ -1, count_bad_doy)

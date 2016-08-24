@@ -25,6 +25,7 @@ FUNCTION pr_process_pix_v30, opts, smooth_pix, NDFI_pix, lst_pix, doy_pix, nb, d
 
   COMPILE_OPT hidden
   COMPILE_OPT IDL2
+  COMPILE_OPT Strictarrsubs
 
   ; INitialize outputs arrays to -999
 
@@ -174,14 +175,20 @@ FUNCTION pr_process_pix_v30, opts, smooth_pix, NDFI_pix, lst_pix, doy_pix, nb, d
         ENDIF
 
         ok_seasons = where(temp_mindoy NE -999, count_okseasons)
-        
+
         IF (count_okseasons NE 0) THEN BEGIN
 
           IF (opts.shp_check EQ 1) THEN BEGIN
 
             check_shp = pr_checkshape(opts, smooth_pix, temp_mindoy, temp_maxdoy, doys_reg, ok_seasons)
-            out_mindoy [where(check_shp EQ 0)] = -999
-            out_maxdoy [where(check_shp EQ 0)] = -999
+            check_failed = where(check_shp EQ 0, count_failed)
+            
+            IF (count_failed NE 0) THEN BEGIN
+
+              out_mindoy [where(check_shp EQ 0)] = -999
+              out_maxdoy [where(check_shp EQ 0)] = -999
+
+            ENDIF
 
           ENDIF
 
