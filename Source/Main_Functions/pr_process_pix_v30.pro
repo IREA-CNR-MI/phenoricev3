@@ -223,8 +223,13 @@ FUNCTION pr_process_pix_v30, opts, smooth_pix, NDFI_pix, lst_pix, doy_pix, nb, d
 
               ; "flowering" date: hlf position of where vi above 90th percentile !
 
-              HalfHead = where((smooth_pix[pos_min:(pos_max+opts.decrease_win)] GE (val_min + 0.9 * (val_max-val_min))) AND (smooth_pix[pos_min:(pos_max+opts.decrease_win)] GE 0), countHalfHead)
-              out_halfhead [ind_season] = mean(8*HalfHead)+ doys_reg[pos_min]
+              if opts.decrease EQ 1 then begin
+                HalfHead = where((smooth_pix[pos_min:(pos_max+opts.decrease_win)] GE (val_min + 0.9 * (val_max-val_min))) AND (smooth_pix[pos_min:(pos_max+opts.decrease_win)] GE 0), countHalfHead)
+                out_halfhead [ind_season] = mean(8*HalfHead)+ doys_reg[pos_min]
+              endif else begin
+                HalfHead = where((smooth_pix[pos_min:(pos_max+3)] GE (val_min + 0.9 * (val_max-val_min))) AND (smooth_pix[pos_min:(pos_max+3)] GE 0), countHalfHead)
+                out_halfhead [ind_season] = mean(8*HalfHead)+ doys_reg[pos_min]
+              endelse
 
               ;- SoS: First position where vi > min+10% of min-max range ?????
               ; - Flow: First position where vi > min+90% of min-max range ?????
