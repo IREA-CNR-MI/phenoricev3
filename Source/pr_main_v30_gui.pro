@@ -24,8 +24,8 @@
   ;- --------------------------------------------------------- ;
   ; Set some options for test processing
   ;- --------------------------------------------------------- ;
-  test_data      = 1             ; Leads to using default input data and parameters (for testing purposes)
-  test_folder    = 'PHL_Clipped'  ; testing data folder
+  test_data      = 0             ; Leads to using default input data and parameters (for testing purposes)
+  test_folder    = '/home/lb/Desktop/PHL_Clipped/'  ; testing data folder
   mapscape       = 1             ; Specify to use "mapscape-like" input files --> Leads to changes in NODATA values and (possibly)
   ; generate smoothed file from MAPSCAPE data!!!
   sel_seasons    = [1,1,1,1]
@@ -52,7 +52,7 @@
   META           = 1             ; Specify if saving input multitemporal files or just use "virtual" in-memory files
   ; referring to the input single-data - avoids creating huge "physical" input files !
 
-  force_rebuild  = 1             ; Flag. if set to 1 the input files are rebuilt (overwritten) even if already existing
+  force_rebuild  = 0             ; Flag. if set to 1 the input files are rebuilt (overwritten) even if already existing
   force_resmooth = 1             ; Flag. if set to 1 the smoothed file is rebuilt (overwritten) even if already existing
   overwrite_out  = 1             ; If = 0, then trying to overwrite existing outputs is NOT POSSIBLE
   fullout        = 1             ; Specify if also building an output file containing all bands - obsolete !
@@ -96,13 +96,13 @@
 
     ; Input folder where times series (Single date files) created with MODIStso are stored -
     ; (NOT required if input time series of the considered year are already available !)
-    or_ts_folder = path_create([file_dirname(programrootdir()), 'test_data', test_folder,'Original_MODIS'])
+    or_ts_folder = path_create([test_folder,'Original_MODIS'])
 
     ; Folder where time series to be used as input for phenorice will be stored -->  Intermediate multiband files
-    in_ts_folder = path_create([file_dirname(programrootdir()), 'test_data', test_folder, 'inputs'])
+    in_ts_folder = path_create([test_folder, 'inputs'])
 
     ; Name of the input "land cover masking" file. Only pixels at "1" in this file are processed
-    in_lc_file = path_create([file_dirname(programrootdir()), 'test_data', test_folder,'Ancillary', $
+    in_lc_file = path_create([test_folder,'Ancillary', $
       'Land_Cover', 'Mask.dat'])
 
     start_year = start_year     &         end_year = end_year   ; Start and end year for the analysis
@@ -142,7 +142,7 @@
       max_value      : 1 ,$      ; Check if max above threshold ? ( 1 = Yes)
       vi_tr_max      : 4000 ,$   ; Threshold for max - if max below this value, it is discarded
       decrease       : 1      ,$ ; Check if max decreases below a threshold on a window on th right side ? ( 1 = Yes)
-      decrease_win   : 8  ,$     ; Dimension of the decrease window (as number of 8 days periods)
+      decrease_win   : 16  ,$     ; Dimension of the decrease window (as number of 8 days periods)
       decrease_perc  : 0.50, $   ; Percentage decrease to be checked
       ;---- Criteria for minimum detection
       min_value      : 1, $      ; Check if min below threshold ? ( 1 = Yes)
@@ -332,6 +332,11 @@
       ;  Second index: max number of compositing periods between min and max;
       lst             : fix(in_opts_arr[49]) ,$           ; Check if min occurs in a period with LST above a given threshold ? ( 1 = Yes)
       lst_thresh      : fix(in_opts_arr[50] ),$ ; Threshold for LST (in °C)
+      
+      ; criteria for vi shape checks
+      shp_check      : shp_check, $
+      check_shape_meth: "linear", $
+      check_corr     : check_corr, $
 
       ;---- Selected outputs
 

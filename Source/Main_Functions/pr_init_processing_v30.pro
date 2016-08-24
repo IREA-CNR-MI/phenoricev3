@@ -73,12 +73,6 @@ FUNCTION pr_init_processing_v30, in_files, opts, out_rast_list, ind_year
   ; Get the acquisition DOYS from the header
   getheader.key = 'Wavelength' &  getheader.execute
   doys_reg  = getheader.value
-  
-  ; add 8 to the reported acquisition DOYs --> done because usually the real DOYs are
-  ; in the last part of the period, so that when "substituting" real doy with theoretical
-  ; we get less "real" difference
-
-  doys_reg = fix(doys_reg) + 8
 
   ; Get number of bands and number of columns
   nb    = in_vi.nbands
@@ -166,6 +160,12 @@ FUNCTION pr_init_processing_v30, in_files, opts, out_rast_list, ind_year
   IF (opts.sel_seasons[2] EQ 1) THEN opts.pos_quart_max [where (doys_reg GE opts.doy_3q[0]-7 AND  doys_reg LE opts.doy_3q[1])]  = 2
   IF (opts.sel_seasons[3] EQ 1) THEN opts.pos_quart_max [where (doys_reg GE opts.doy_4q[0]-7 AND  doys_reg LE opts.doy_4q[1])]  = 3
   opts.pos_legit_maxs = opts.pos_quart_max NE -1
+  
+  ; add 8 to the reported acquisition DOYs --> done because usually the real DOYs are
+  ; in the last part of the period, so that when "substituting" real doy with theoretical
+  ; we get less "real" difference
+
+   doys_reg = fix(doys_reg) + 8
 
 ;- ------------------------------------------------------------------
 ;- Start Processing        ------------------------------------------
