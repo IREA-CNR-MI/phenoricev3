@@ -73,6 +73,12 @@ FUNCTION pr_init_processing_v30, in_files, opts, out_rast_list, ind_year
   ; Get the acquisition DOYS from the header
   getheader.key = 'Wavelength' &  getheader.execute
   doys_reg  = getheader.value
+  
+  ; add 8 to the reported acquisition DOYs --> done because usually the real DOYs are
+  ; in the last part of the period, so that when "substituting" real doy with theoretical
+  ; we get less "real" difference
+
+  doys_reg = fix(doys_reg) + 8
 
   ; Get number of bands and number of columns
   nb    = in_vi.nbands
