@@ -38,7 +38,7 @@
   end_year       = 2013
 
   shp_check      = 0
-  check_corr     = 0.9
+  check_corr     = 0.95
 
   ;- --------------------------------------------------------- ;
   ; Set General processing options: number of cpus, overwriting, reporocessing ,etc.
@@ -52,7 +52,7 @@
   META           = 1             ; Specify if saving input multitemporal files or just use "virtual" in-memory files
   ; referring to the input single-data - avoids creating huge "physical" input files !
 
-  force_rebuild  = 0             ; Flag. if set to 1 the input files are rebuilt (overwritten) even if already existing
+  force_rebuild  = 1             ; Flag. if set to 1 the input files are rebuilt (overwritten) even if already existing
   force_resmooth = 1             ; Flag. if set to 1 the smoothed file is rebuilt (overwritten) even if already existing
   overwrite_out  = 1             ; If = 0, then trying to overwrite existing outputs is NOT POSSIBLE
   fullout        = 1             ; Specify if also building an output file containing all bands - obsolete !
@@ -102,8 +102,11 @@
     in_ts_folder = path_create([test_folder, 'inputs'])
 
     ; Name of the input "land cover masking" file. Only pixels at "1" in this file are processed
-    in_lc_file = path_create([test_folder,'Ancillary', $
-      'Land_Cover', 'Mask.dat'])
+    in_lc_file = path_create([test_folder,'Ancillary', 'Land_Cover', 'Mask.dat'])
+    
+    ; Out file name (Actually, a prefixc to which indication about processing year is appended
+    out_filename = path_create([test_folder,'Outputs',(string(proc_year)).trim(),'Phenorice_out_'])
+    file_mkdir,file_dirname(out_filename)
 
     start_year = start_year     &         end_year = end_year   ; Start and end year for the analysis
 
@@ -254,9 +257,9 @@
 
     ; Check for overlapping between ranges
 
-    Inters_1_2 = setintersection(range_seas_1, range_seas_2)
-    Inters_2_3 = setintersection(range_seas_2, range_seas_3)
-    Inters_3_4 = setintersection(range_seas_3, range_seas_4)
+    Inters_1_2 = cgSetIntersection(range_seas_1, range_seas_2)
+    Inters_2_3 = cgSetIntersection(range_seas_2, range_seas_3)
+    Inters_3_4 = cgSetIntersection(range_seas_3, range_seas_4)
 
     IF (min([Inters_1_2,Inters_2_3,Inters_3_4]) NE -999) OR (max([Inters_1_2,Inters_2_3,Inters_3_4]) NE -999) THEN BEGIN
       mes =dialog_message('Selected periods are overlapping - please correct')
@@ -267,9 +270,9 @@
 
     IF (stard_doy_seas1 LT 0) THEN BEGIN
       range_seas1_cor = 365+range_seas_1
-      IF (total(sel_seasons[0:1]) EQ 2)           THEN Inters_1_2_cor = setintersection(range_seas1_cor, range_seas_2)  ELSE inters_1_2_cor = -999
-      IF ((sel_seasons [0] + sel_seasons[2] )EQ 2) THEN Inters_1_3_cor = setintersection(range_seas1_cor, range_seas_3) ELSE inters_1_3_cor = -999
-      IF ((sel_seasons [0] + sel_seasons[3] )EQ 2) THEN Inters_1_4_cor = setintersection(range_seas1_cor, range_seas_4) ELSE inters_1_4_cor = -999
+      IF (total(sel_seasons[0:1]) EQ 2)           THEN Inters_1_2_cor = cgSetIntersection(range_seas1_cor, range_seas_2)  ELSE inters_1_2_cor = -999
+      IF ((sel_seasons [0] + sel_seasons[2] )EQ 2) THEN Inters_1_3_cor = cgSetIntersection(range_seas1_cor, range_seas_3) ELSE inters_1_3_cor = -999
+      IF ((sel_seasons [0] + sel_seasons[3] )EQ 2) THEN Inters_1_4_cor = cgSetIntersection(range_seas1_cor, range_seas_4) ELSE inters_1_4_cor = -999
 
       IF  (min([Inters_1_2_cor,Inters_1_3_cor,Inters_1_4_cor]) NE -999) OR (max([Inters_1_2_cor,Inters_1_3_cor,Inters_1_4_cor]) NE -999) THEN BEGIN
         mes =dialog_message('Selected periods are overlapping - Quarter One includes maxima of previous year in a period potentially included in other quarters for current year !!! Please correct !')
@@ -383,9 +386,6 @@
     print, "# BUILDING INPUT MULTITEMPORAL FILES"
     print, "# ############################################ #"
     
-    ; Out file name (Actually, a prefixc to which indication about processing year is appended
-    out_filename = path_create([file_dirname(programrootdir()), 'test_data', test_folder,'Outputs',(string(proc_year)).trim(),'Phenorice_out_'])
-    file_mkdir,file_dirname(out_filename)
 
     ; Initialize structure of file names and of metaraster files (used if "META")
     out_files_list = {evi_file: "", ndfi_file:"", blue_file :"", $
