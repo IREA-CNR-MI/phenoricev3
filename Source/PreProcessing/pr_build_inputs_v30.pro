@@ -248,6 +248,12 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
         ENDIF
 
       ENDIF
+      
+      ; add 8 to the reported acquisition DOYs --> done because usually the real DOYs are
+      ; in the last part of the period, so that when "substituting" real doy with theoretical
+      ; we get less "real" difference
+
+      doys_required = fix(doys_required) + 8
 
       result.metadata.additem,    'Wavelength', doys_required
       result.metadata.additem,    'time', times
@@ -265,6 +271,7 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
 
       ENDIF ELSE BEGIN
 
+       ; TO BE DONE WHEN PASSING TO Service pack 1 !!!!
         ; if META, store the multitemporal file in JSON virtual format
         ; Don't close the fiules so that they are still there for Quality computation !
         ;        resultHash = result.dehydrate()

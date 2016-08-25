@@ -8,7 +8,13 @@ test_data/IT_Clipped/inputs/*
 test_data/PHL_Clipped/inputs/2013/*
 test_data/PHL_Clipped/inputs/2012/*
 test_data/PHL_Clipped/*
+test_data/home/lb/Desktop/PHL_Clipped/*
+test_data/home/lb/Desktop/PHL_Clipped/Outputs/2012/
+test_data/home/lb/Desktop/PHL_Clipped/Outputs/2013/
 test_data/PHL_Clipped/Outputs/2012/*
+test_data/PHL_Clipped/Outputs/2013/
+Source/Accessoires/Options_file.RData
+newproject.sav
 
 
 ./.git/objects/c2/548a6cc840f311a9dcdd0bf3bf9e9d7c814ea2

@@ -267,7 +267,7 @@
 
     IF (stard_doy_seas1 LT 0) THEN BEGIN
       range_seas1_cor = 365+range_seas_1
-      IF (total(sel_seasons[0:1]) EQ 2)           THEN Inters_1_2_cor= setintersection(range_seas1_cor, range_seas_2)  ELSE inters_1_2_cor = -999
+      IF (total(sel_seasons[0:1]) EQ 2)           THEN Inters_1_2_cor = setintersection(range_seas1_cor, range_seas_2)  ELSE inters_1_2_cor = -999
       IF ((sel_seasons [0] + sel_seasons[2] )EQ 2) THEN Inters_1_3_cor = setintersection(range_seas1_cor, range_seas_3) ELSE inters_1_3_cor = -999
       IF ((sel_seasons [0] + sel_seasons[3] )EQ 2) THEN Inters_1_4_cor = setintersection(range_seas1_cor, range_seas_4) ELSE inters_1_4_cor = -999
 
