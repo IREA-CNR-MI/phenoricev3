@@ -131,11 +131,11 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
     doys_required [where(years_required EQ proc_year +1)] = doys_required [where(years_required EQ proc_year +1)] + 365
   ENDIF
 
-  ; add 8 to the reported acquisition DOYs --> done because usually the real DOYs are 
-  ; in the last part of the period, so that when "substituting" real doy with theoretical
-  ; we get less "real" difference
+  smooth_dirname = path_create([in_ts_folder,strtrim(proc_year,2),'VI_Smoothed'])
+  out_files_list.smooth_file = path_create([smooth_dirname,file_basename(out_filename)+'VI_smooth_'+yeardoys_required[0]+'_'+yeardoys_required[-1]+'.dat'])
+  file_mkdir,smooth_dirname
 
-  doys_required = fix(doys_required) + 8
+  out_files_list.out_filename = out_files_list.out_filename + yeardoys_required[0]+'_'+yeardoys_required[-1]+'.dat'
 
   ;- --------------------------------------------------------- ;
   ;-  Search file system to see which of the required input files
@@ -148,13 +148,13 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
     out_name = path_create([in_ts_folder+path_sep()+strtrim(proc_year, 2),in_bands_or[band]+ $
       '_ts_input_'+yeardoys_required[0]+'_'+yeardoys_required[-1]+'.dat'])
 
-;    IF META THEN out_name = out_name.remove(-3)+'json'   ; If META, save a virtual raster as a json file !
+    ;    IF META THEN out_name = out_name.remove(-3)+'json'   ; If META, save a virtual raster as a json file !
     out_files_list.(band) = out_name
 
     ; Check if already existing. If no, then create it using the MODIStsp inputs + creating fillers
 
     IF ((file_test(out_name)) EQ 0 OR (force_rebuild EQ 1)) THEN BEGIN
-      
+
       file_delete, out_name, /ALLOW_NONEXISTENT
       file_delete,(out_name.remove(-3)+'hdr'),/ALLOW_NONEXISTENT
       no_data           = nodatas_or[band]
@@ -175,9 +175,9 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
         IF count_files EQ 1 THEN BEGIN ; if exists, get its filename and put it in the list of required files
 
           in_files_required [index_files] = in_files[result]
-        
+
         ENDIF ELSE BEGIN   ; If file doesn't exist, build an "average" filler file to be used to fill the series !
-          
+
           out_name_filler = in_ts_folder+path_sep()+'ph_Fillers'+path_sep()+'AvgFiller'+'_'+ $
             in_bands_or[band]+'_'+yeardoy+'.dat'
           IF ((file_test(out_name_filler) EQ 0) OR (force_rebuild EQ 1)) THEN BEGIN   ; If required filler doesn't exist, then create it
@@ -196,7 +196,7 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
             ENDELSE
           ENDIF
           in_files_required [index_files]  =  out_name_filler  ; Put the filler filename in the correct position of the input files list
-        
+
         ENDELSE ; end else on existance of required file
 
       ENDFOREACH ; end foreach on searching required files
@@ -220,7 +220,7 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
         IF file_ind EQ 0 THEN BEGIN
           raster_list = e.openraster(file)
           IF (raster_list.metadata.hastag ('time')) THEN raster_list.metadata.updateitem, 'time', time.acquisition $
-                                            ELSE raster_list.metadata.additem,'time', time.acquisition
+          ELSE raster_list.metadata.additem,'time', time.acquisition
         ENDIF ELSE BEGIN
           raster = e.openraster(file)
           IF (raster.metadata.hastag ('time')) THEN raster.metadata.updateitem, 'time', time.acquisition ELSE raster.metadata.additem,'time', time.acquisition
@@ -248,14 +248,20 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
         ENDIF
 
       ENDIF
+      
+      ; add 8 to the reported acquisition DOYs --> done because usually the real DOYs are
+      ; in the last part of the period, so that when "substituting" real doy with theoretical
+      ; we get less "real" difference
+
+      doys_required = fix(doys_required) + 8
 
       result.metadata.additem,    'Wavelength', doys_required
       result.metadata.additem,    'time', times
       result.metadata.updateitem, 'Band Names', in_bands_or[band] + "_" + yeardoys_required
 
       out_rast_list.(band) = result   ; Put the open virtual raster in the list of required rasters
-      
-      ; If not using META, then save the multitemporal file to disk 
+
+      ; If not using META, then save the multitemporal file to disk
 
       IF (META EQ 0) THEN BEGIN
         file_mkdir, file_dirname(OUT_NAME)
@@ -265,14 +271,15 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
 
       ENDIF ELSE BEGIN
 
+       ; TO BE DONE WHEN PASSING TO Service pack 1 !!!!
         ; if META, store the multitemporal file in JSON virtual format
         ; Don't close the fiules so that they are still there for Quality computation !
-;        resultHash = result.dehydrate()
-;        resultJSON = json_serialize(resultHash)
-;        jsonFile = out_name.remove(-3)+'json'
-;        openw, LUN, jsonFile, /GET_LUN
-;        printf, LUN, ndviJSON
-;        free_lun, LUN
+        ;        resultHash = result.dehydrate()
+        ;        resultJSON = json_serialize(resultHash)
+        ;        jsonFile = out_name.remove(-3)+'json'
+        ;        openw, LUN, jsonFile, /GET_LUN
+        ;        printf, LUN, ndviJSON
+        ;        free_lun, LUN
 
       ENDELSE
 
@@ -315,7 +322,7 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
     IF META THEN interleave = 'bsq' ELSE interleave = 'bip'
     out_quality_file = enviraster(URI = out_files_list.quality_file, NROWS = in_rely.nrows, NCOLUMNS = in_rely.ncolumns, $
       NBANDS = in_rely.nbands, DATA_TYPE = in_rely.data_type, interleave = interleave)
-    
+
     FOREACH tile, tileIterator, line DO BEGIN ; cycle on lines ( = tiles)
 
       IF line MOD 100 EQ 0 THEN print , line
@@ -340,7 +347,7 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
 
       ; Save line on output file
       out_quality_file.setdata, out_quality, SUB_RECT=tileIterator.current_subrect, BANDS = tileiterator.current_band
-        
+
     ENDFOREACH
 
     ; Add metadata to quality file and save it
@@ -351,7 +358,7 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
     IF META THEN out_rast_list.quality_file = envimetaspectralraster(out_quality_file, spatialref = result.spatialref) $
     ELSE out_rast_list.quality_file = envimetaspectralraster(out_quality_file, spatialref = in_rely.spatialref)
     out_quality_file.close
-    
+
     ; Cleanup
     in_rely.close
     in_ui.close
@@ -367,7 +374,8 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
 
     smooth_dirname = or_ts_folder+path_sep()+'VI_Smoothed'
     outname_smooth = smooth_dirname+path_sep()+strtrim(proc_year,2) + path_sep()+file_basename(out_filename) + $
-      '_VI_smooth_'+strtrim(string(proc_year), 2)+'.dat'
+      '_VI_smooth_'+yeardoys_required[0]+'_'+yeardoys_required[-1]+'.dat'
+
     ; If multitemporal smoothed file doesn't exist, create it from single date files
     IF ((file_test(outname_smooth) EQ 0) OR (force_rebuild EQ 1)) THEN BEGIN
 
@@ -414,10 +422,10 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
 
   ; Cleanup to close all open files
 
-    DataColl = e.data
-    DataItems = DataColl.get()
-    FOREACH item, DataItems DO item.close
-    e.close
+  DataColl = e.data
+  DataItems = DataColl.get()
+  FOREACH item, DataItems DO item.close
+  e.close
 
   return, out_files_list
 
