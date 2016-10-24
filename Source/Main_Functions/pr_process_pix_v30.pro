@@ -25,7 +25,6 @@ FUNCTION pr_process_pix_v30, opts, smooth_pix, NDFI_pix, lst_pix, doy_pix, nb, d
 
   COMPILE_OPT hidden
   COMPILE_OPT IDL2
-  COMPILE_OPT Strictarrsubs
 
   ; INitialize outputs arrays to -999
 
@@ -92,7 +91,7 @@ FUNCTION pr_process_pix_v30, opts, smooth_pix, NDFI_pix, lst_pix, doy_pix, nb, d
           val_max_ass   = max(val_max_quart, pos_max_ass)            ;   Find absolute max in selected quarter and its position
           IF (val_max_ass NE 0 ) THEN BEGIN
             temp_maxdoy[ind_season] = pos_max_ass                    ; If a max availble, put its position in temp_maxdoy (if no max, temp_max_map of the quarter stays at -999)
-            max_array[pos_max_ass]  = 5  ; Change the values of "rice" maxs (i.e., absolute maxs in quarters) from 1 to 5 in the output rice max array
+            max_array[pos_max_ass]  = 100  ; Change the values of "rice" maxs (i.e., absolute maxs in quarters) from 1 to 100 in the output rice max array
           ENDIF
 
         ENDFOREACH
@@ -114,10 +113,10 @@ FUNCTION pr_process_pix_v30, opts, smooth_pix, NDFI_pix, lst_pix, doy_pix, nb, d
             ; find  minimums between XX and YY composites of absolute max
             pos_minq_ok [temp_maxdoy_quart-opts.max_aft_win[1] > 0 : temp_maxdoy_quart-opts.max_aft_win[0]] = 1 ;
             check_arr     = pos_minq_ok*min_array
-            pos_min_quart = where((check_arr EQ 5) OR (check_arr EQ 1), count)
+            pos_min_quart = where((check_arr EQ 100) OR (check_arr EQ 1), count)
             IF count GT 0 THEN BEGIN
               temp_mindoy[ind_season]       = max(pos_min_quart)
-              min_array[max(pos_min_quart)] = 5 ; Change the values of "rice" mins (i.e., mins nearest to a suitable max) from 1 to 5 in the output rice min array
+              min_array[max(pos_min_quart)] = 100 ; Change the values of "rice" mins (i.e., mins nearest to a suitable max) from 1 to 100 in the output rice min array
             ENDIF ELSE BEGIN    ; If no "legit" maxs are found in the window, DON'T put the min to 5, and reset the MAX to -999 (a.k.a. --> max legit, but removed because no min found)
               max_array[temp_maxdoy[ind_season]] = -999
               temp_maxdoy[ind_season]            = -999
@@ -134,7 +133,7 @@ FUNCTION pr_process_pix_v30, opts, smooth_pix, NDFI_pix, lst_pix, doy_pix, nb, d
         FOREACH season, opts.selquarts, ind_season DO BEGIN
           IF (opts.n_sel_season GT 1) THEN BEGIN
             IF ((temp_mindoy[ind_season] EQ temp_mindoy[ind_season-1]) AND (temp_mindoy[ind_season] NE -999))  THEN BEGIN
-              temp_mindoy[ind_season]  = 0
+              temp_mindoy[ind_season]  = -999
               IF (temp_maxdoy[ind_season] NE -999) THEN max_array[temp_maxdoy[ind_season]] = -999
               out_maxdoy[ind_season]   = -999
               out_halfhead[ind_season] = -999
@@ -147,9 +146,9 @@ FUNCTION pr_process_pix_v30, opts, smooth_pix, NDFI_pix, lst_pix, doy_pix, nb, d
         tempmin_ok = where(temp_mindoy NE -999, count)
         IF (count NE 0 ) THEN out_mindoy [tempmin_ok] = doys_reg[temp_mindoy[tempmin_ok]]
 
-        ; Final check on decrease of signal !!!!!
+        ; Final check on decrease of signal !!!!! --
 
-        IF opts.decrease EQ 1 AND count NE 0 THEN BEGIN
+        IF opts.MAT_CHECK EQ 1 AND count NE 0 THEN BEGIN
 
           FOREACH season, opts.selquarts, ind_season DO BEGIN
 
@@ -157,11 +156,13 @@ FUNCTION pr_process_pix_v30, opts, smooth_pix, NDFI_pix, lst_pix, doy_pix, nb, d
               min_vi = smooth_pix[temp_mindoy[ind_season]]
               max_vi = smooth_pix[temp_maxdoy[ind_season]]
               thresh = min_vi +(max_vi - min_vi)*opts.decrease_perc
-              check  = min(smooth_pix[temp_maxdoy[ind_season]:(temp_maxdoy[ind_season]+ opts.decrease_win)<(nb-1)]-thresh)
+              check  = min(smooth_pix[temp_maxdoy[ind_season]+opts.MAT_WIN[0]:(temp_maxdoy[ind_season]+opts.MAT_WIN[1])<(nb-1)]-thresh)
 
               IF (check  GT 0) THEN BEGIN   ; If check not passed, then set maxdoy, mindoy etc to -999
-                out_mindoy [ind_season]       = -999
-                out_maxdoy [ind_season]        = -999
+                out_mindoy  [ind_season]       = -999
+                out_maxdoy  [ind_season]       = -999
+                temp_mindoy [ind_season]       = -999
+                temp_maxdoy [ind_season]       = -999 
                 ;                out_halfhead[ind_season]      = -999
                 ;                min_array[max(pos_min_quart)] = -999
                 ;                max_array[max(pos_min_quart)] = -999
@@ -174,39 +175,15 @@ FUNCTION pr_process_pix_v30, opts, smooth_pix, NDFI_pix, lst_pix, doy_pix, nb, d
 
         ENDIF
 
-        ok_seasons = where(temp_mindoy NE -999, count_okseasons)
-
-        IF (count_okseasons NE 0) THEN BEGIN
-
-          IF (opts.shp_check EQ 1) THEN BEGIN
-
-            check_shp = pr_checkshape(opts, smooth_pix, temp_mindoy, temp_maxdoy, doys_reg, ok_seasons)
-            check_failed = where(check_shp EQ 0, count_failed)
-            
-            IF (count_failed NE 0) THEN BEGIN
-
-              out_mindoy [where(check_shp EQ 0)] = -999
-              out_maxdoy [where(check_shp EQ 0)] = -999
-
-            ENDIF
-
-          ENDIF
-
-        ENDIF
-
-
-
-        ;- --------------------------------------------------------- ;
-        ;- Compute number of identified rice seasons
-        ;- --------------------------------------------------------- ;
-        out_nrice = total(out_maxdoy NE -999)
-
         ;- --------------------------------------------------------- ;
         ;- Compute additional pheno paramaetrs on identified seasons
         ;- (execute ONLY if at least a good season was found !)
         ;- --------------------------------------------------------- ;
 
-        IF (out_nrice GT 0) THEN BEGIN
+        ok_seasons = where(temp_mindoy NE -999, count_okseasons)
+        
+        IF (count_okseasons NE 0) THEN BEGIN
+      
 
           FOREACH season, opts.selquarts, ind_season DO BEGIN
 
@@ -223,13 +200,15 @@ FUNCTION pr_process_pix_v30, opts, smooth_pix, NDFI_pix, lst_pix, doy_pix, nb, d
 
               ; "flowering" date: hlf position of where vi above 90th percentile !
 
-              if opts.decrease EQ 1 then begin
-                HalfHead = where((smooth_pix[pos_min:(pos_max+opts.decrease_win)] GE (val_min + 0.9 * (val_max-val_min))) AND (smooth_pix[pos_min:(pos_max+opts.decrease_win)] GE 0), countHalfHead)
+              if opts.MAT_CHECK EQ 1 then begin
+                HalfHead = where((smooth_pix[pos_min:(pos_max+opts.MAT_WIN[1])] GE (val_min + 0.9 * (val_max-val_min))) AND (smooth_pix[pos_min:(pos_max+opts.MAT_WIN[1])] GE 0), countHalfHead)
                 out_halfhead [ind_season] = mean(8*HalfHead)+ doys_reg[pos_min]
               endif else begin
                 HalfHead = where((smooth_pix[pos_min:(pos_max+3)] GE (val_min + 0.9 * (val_max-val_min))) AND (smooth_pix[pos_min:(pos_max+3)] GE 0), countHalfHead)
                 out_halfhead [ind_season] = mean(8*HalfHead)+ doys_reg[pos_min]
               endelse
+              
+
 
               ;- SoS: First position where vi > min+10% of min-max range ?????
               ; - Flow: First position where vi > min+90% of min-max range ?????
@@ -280,8 +259,44 @@ FUNCTION pr_process_pix_v30, opts, smooth_pix, NDFI_pix, lst_pix, doy_pix, nb, d
             ENDIF  ; end if on identfied season in quarter
 
           ENDFOREACH ;fine loop sui 4 quarters
+          
+          ;- --------------------------------------------------------- ;
+          ;- If selected, do a final check on the shape of the VI
+          ;- time serie between Sow and EOS.
+          ;- At the moment: Check for "linearity" between Min and Max
+          ;- and between max and EO 
+          ;- --------------------------------------------------------- ;
+          
+          IF (opts.shp_check EQ 1) THEN BEGIN
 
-        ENDIF ; End loop on rice seasons > 0 x computing additiona parameters
+            check_shp = pr_checkshape(opts, smooth_pix, out_mindoy, out_maxdoy, out_eosdoy, doys_reg, ok_seasons)
+            where_failed = where(check_shp EQ 0, count_failed)
+            IF (count_failed NE 0) THEN BEGIN
+
+              out_mindoy [where_failed]       = -999
+              out_maxdoy [where_failed]       = -999
+              out_eosdoy [where_failed]       = -999
+              out_int    [where_failed]       = -999
+              out_maxvi  [where_failed]       = -999
+              out_minvi  [where_failed]       = -999
+              out_max_min_delta[where_failed] = -999
+              out_eos_min_delta[where_failed] = -999
+
+            ENDIF
+
+          ENDIF
+          
+          ;- --------------------------------------------------------- ;
+          ;- Compute number of identified rice seasons
+          ;- --------------------------------------------------------- ;
+          
+          out_nrice = total(out_maxdoy NE -999)
+
+        ENDIF ELSE BEGIN; End loop on rice seasons > 0 x computing additiona parameters
+                
+        out_nrice = 0
+        
+        ENDELSE
 
       ENDIF ELSE BEGIN ; end If on no legit mins identified
 

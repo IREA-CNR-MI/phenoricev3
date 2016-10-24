@@ -40,6 +40,9 @@ FUNCTION pr_init_processing_v30, in_files, opts, out_rast_list, ind_year
     in_lc      = e.openraster(in_files.lc_file)
     in_NDFI    = e.openraster(in_files.ndfi_file)
     in_lst     = e.openraster(in_files.lst_file)
+    in_blue     = e.openraster(in_files.blue_file)
+    in_rely     = e.openraster(in_files.rely_file)
+    in_ui     = e.openraster(in_files.ui_file)
   ENDIF ELSE BEGIN
     in_vi      = out_rast_list.evi_file
     IF opts.force_rebuild THEN in_quality = out_rast_list.quality_file ELSE in_quality = e.openraster(in_files.quality_file)
@@ -47,6 +50,10 @@ FUNCTION pr_init_processing_v30, in_files, opts, out_rast_list, ind_year
     in_lc      = e.openraster(in_files.lc_file)
     in_NDFI    = out_rast_list.ndfi_file
     in_lst     = out_rast_list.lst_file
+    in_blue    = out_rast_list.blue_file
+    in_rely    = out_rast_list.rely_file
+    in_ui      = out_rast_list.ui_file
+    
   ENDELSE
 
 ; IF input taken from already existing smoothed file, set smooth_flag to 1
@@ -73,6 +80,12 @@ FUNCTION pr_init_processing_v30, in_files, opts, out_rast_list, ind_year
   ; Get the acquisition DOYS from the header
   getheader.key = 'Wavelength' &  getheader.execute
   doys_reg  = getheader.value
+  
+  ; add 8 to the reported acquisition DOYs --> done because usually the real DOYs are
+  ; in the last part of the period, so that when "substituting" real doy with theoretical
+  ; we get less "real" difference
+
+  doys_reg = fix(doys_reg) + 8
 
   ; Get number of bands and number of columns
   nb    = in_vi.nbands
@@ -126,28 +139,28 @@ FUNCTION pr_init_processing_v30, in_files, opts, out_rast_list, ind_year
   if (ind_year EQ 0) then begin
     addopts = {$; array indexes
       der_ind        : indgen (opts.derivs_opt [0]) + 1  ,$  ; Positions where derivatives should be checked for MAX identification
-      maxdec_ind     : indgen (opts.decrease_win)   + 1  ,$ ; Positions where derivatives should be checked for VI decrease
+      maxdec_ind     : indgen (opts.MAT_WIN[1])   + 1  ,$ ; Positions where derivatives should be checked for VI decrease
       growth_ind     : indgen (opts.growth_opt [0]) + 1  ,$ ; positions to be checked to identify consistent growth after minimum
       vi_max_ind     : indgen (opts.max_aft_win[1]  - opts.max_aft_win[0]+1)+opts.max_aft_win[0], $ ; positions to be checked to identify if max is present in suitable period after min
       selquarts      : where  (opts.sel_seasons EQ 1) ,$
       n_sel_season   : total  (opts.sel_seasons) ,$
       pos_legit_maxs : intarr(nb) , $
       pos_quart_max  : intarr(nb) - 1, $
-      check_arr_max  : [opts.derivs,opts.max_value, opts.decrease], $
+      check_arr_max  : [opts.derivs,opts.max_value, opts.MAT_CHECK], $
       check_arr_min  : [opts.min_value,opts.growth, opts.flood, $  ; Array specisying which min criteria should be considered
       opts.max_after, opts.lst] $
     }
     opts = struct_addtags(opts,addopts)
   endif else begin
       opts.der_ind        = indgen (opts.derivs_opt [0]) + 1    ; Positions where derivatives should be checked for MAX identification
-      opts.maxdec_ind     = indgen (opts.decrease_win)   + 1   ; Positions where derivatives should be checked for VI decrease
+      opts.maxdec_ind     = indgen (opts.MAT_WIN[1])   + 1   ; Positions where derivatives should be checked for VI decrease
       opts.growth_ind     = indgen (opts.growth_opt [0]) + 1   ; positions to be checked to identify consistent growth after minimum
       opts.vi_max_ind     = indgen (opts.max_aft_win[1] - opts.max_aft_win[0]+1)+opts.max_aft_win[0] ; positions to be checked to identify if max is present in suitable period after min
       opts.selquarts      = where  (opts.sel_seasons EQ 1)
       opts.n_sel_season   = total  (opts.sel_seasons)
       opts.pos_legit_maxs = intarr(nb) 
       opts.pos_quart_max  = intarr(nb) - 1
-      opts.check_arr_max  = [opts.derivs,opts.max_value, opts.decrease]
+      opts.check_arr_max  = [opts.derivs,opts.max_value, opts.MAT_CHECK]
       opts.check_arr_min  = [opts.min_value,opts.growth, opts.flood, $ ; Array specisying which min criteria should be considered
                             opts.max_after, opts.lst] 
   endelse
@@ -256,8 +269,29 @@ FUNCTION pr_init_processing_v30, in_files, opts, out_rast_list, ind_year
           smooth_matrix = in_smooth.getdata(SUB_RECT=[0,sel_lines[0],ncols-1,sel_lines[1]])
           data_QA = 0
         ENDIF ELSE BEGIN
-          IF opts.meta THEN smooth_matrix = 32767+(intarr(ncols, n_elements(lines), nb)) ELSE smooth_matrix = (intarr(nb, ncols, n_elements(lines))+32767)
-          data_QA = in_quality.getdata(SUB_RECT=[0,sel_lines[0],ncols-1,sel_lines[1]])
+          IF opts.meta THEN BEGIN
+            smooth_matrix = 32767+(intarr(ncols, n_elements(lines), nb))
+          ENDIF ELSE BEGIN
+             smooth_matrix = (intarr(nb, ncols, n_elements(lines))+32767)
+          ENDELSE
+            ; If smoothed file doesn't exist, get the data from accessory files andcompute the quality layer 
+            data_rely = in_rely.getdata(SUB_RECT=[0,sel_lines[0],ncols-1,sel_lines[1]])
+            data_blue = in_blue.getdata(SUB_RECT=[0,sel_lines[0],ncols-1,sel_lines[1]])
+            data_ui = in_ui.getdata(SUB_RECT=[0,sel_lines[0],ncols-1,sel_lines[1]]) 
+            data_QA = 0B*data_ui
+            ones   = where(data_rely EQ 1, count_1)
+            IF count_1 NE 0 THEN BEGIN
+              ui_one      = data_ui[ones]
+              quality_one = 0B*(ui_one LE 2) +1B*((ui_one GT 2) AND (ui_one LE 10)) + 2B*(ui_one GT 10)
+              data_QA [ones] = quality_one
+            ENDIF
+          
+            ;--- Update quality on the basis of blue band (see the excel file in the "docs" folders for the coding)
+            data_QA = 0B*((data_blue LE opts.cloud_clear) AND (data_QA EQ 0)) + $
+              1B*((data_QA EQ 1) AND (data_blue LE opts.cloud_full))  + $
+              1B*((data_QA EQ 0) AND (data_blue GT opts.cloud_clear) AND (data_blue LE opts.cloud_full)) + $
+              2B*((data_QA EQ 2) OR  (data_blue GT opts.cloud_full))
+      
         ENDELSE
 
         ; If debug not choosen, pass variables to bridges and execute pr_process_v30_parline to do
@@ -268,6 +302,7 @@ FUNCTION pr_init_processing_v30, in_files, opts, out_rast_list, ind_year
           ;-  Process data
           ;- ----------------------------------------------------------------------------
           bridge = bridges[cpu_n]
+          print,cpu_n
           
           ; Provide necessary variables to the CPU
           struct_pass   , opts, bridge  ; Pass the opts structure to the bridge

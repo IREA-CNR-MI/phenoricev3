@@ -59,7 +59,7 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
   ;- --------------------------------------------------------- ;
 
   min_doy = min_pos - 8*opts.max_aft_win[1] - 8*opts.win_dim_l
-  max_doy = max_pos + 8*opts.decrease_win*opts.decrease + 8*opts.win_dim_r + 8 + 8
+  max_doy = max_pos + 8*opts.MAT_WIN[1]*opts.MAT_CHECK + 8*opts.win_dim_r + 8 + 8
 
   ; if min_doy < 0 it means that min_doy is on previous year, so recompute it as the complement to 365 and reset min_year to min_year -1
   IF (min_doy LT 0 ) THEN BEGIN
@@ -294,131 +294,131 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
   ; TODO: Parallelize this execution
   ;- --------------------------------------------------------- ;
 
-  out_files_list.quality_file = path_create([in_ts_folder+path_sep()+strtrim(proc_year,2), $
-    "Quality"+'_ts_input_'+yeardoys_required[0]+'_'+yeardoys_required[-1]+'.dat'])
-  print, '# --- Building Quality File ---- '
-
-  ; Check if quality file already existing
-  IF ((file_test(out_files_list.quality_file) EQ 0) OR (force_rebuild EQ 1)) THEN BEGIN
-
-    file_delete,out_files_list.quality_file,/ALLOW_NONEXISTENT
-    file_delete,out_files_list.quality_file.remove(-3)+'.hdr',/ALLOW_NONEXISTENT
-
-    IF META EQ 0 THEN BEGIN
-      ; open files needed to compute quality
-      in_rely = e.openraster(out_files_list.rely_file)
-      in_UI   = e.openraster(out_files_list.ui_file)
-      in_blue = e.openraster(out_files_list.blue_file)
-    ENDIF ELSE BEGIN ; OR use the already available METAs
-      in_rely = out_rast_list.rely_file
-      in_UI   = out_rast_list.ui_file
-      in_blue = out_rast_list.blue_file
-    ENDELSE
-
-    ; start computing quality
-    tileIterator = in_rely.createtileiterator(MODE = 'spectral')
-
-    ; Initialize output quality raster
-    IF META THEN interleave = 'bsq' ELSE interleave = 'bip'
-    out_quality_file = enviraster(URI = out_files_list.quality_file, NROWS = in_rely.nrows, NCOLUMNS = in_rely.ncolumns, $
-      NBANDS = in_rely.nbands, DATA_TYPE = in_rely.data_type, interleave = interleave)
-
-    FOREACH tile, tileIterator, line DO BEGIN ; cycle on lines ( = tiles)
-
-      IF line MOD 100 EQ 0 THEN print , line
-      data_rely   = transpose(tile)
-      data_ui     = (in_UI.getdata(SUB_RECT = tileIterator.current_subrect,BANDS = tileiterator.current_band))
-      data_blue   = (in_blue.getdata(BANDS = tileiterator.current_band, SUB_RECT = tileIterator.current_subrect))
-      out_quality = 1B*(data_rely EQ 1)+2B*(data_rely GT 1)+2B*(data_rely LT 0)
-
-      ;--- Update reliability on "intermediate" condition using usefulness index
-      ones   = where(data_Rely EQ 1  , count_1)
-      IF count_1 NE 0 THEN BEGIN
-        ui_one      = data_ui[ones]
-        quality_one = 0B*(ui_one LE 2) +1B*((ui_one GT 2) AND (ui_one LE 10)) + 2B*(ui_one GT 10)
-        out_quality [ones] = quality_one
-      ENDIF
-
-      ;--- Update quality on the basis of blue band (see the excel file in the "docs" folders for the coding)
-      out_quality = 0B*((data_blue LE cloud_clear) AND (out_quality EQ 0)) + $
-        1B*((out_quality EQ 1) AND (data_blue LE cloud_full))  + $
-        1B*((out_quality EQ 0) AND (data_blue GT cloud_clear) AND (data_blue LE cloud_full)) + $
-        2B*((out_quality EQ 2) OR  (data_blue GT cloud_full))
-
-      ; Save line on output file
-      out_quality_file.setdata, out_quality, SUB_RECT=tileIterator.current_subrect, BANDS = tileiterator.current_band
-
-    ENDFOREACH
-
-    ; Add metadata to quality file and save it
-    out_quality_file.metadata.additem, 'Wavelength', doys_required
-    out_quality_file.metadata.additem, 'Band Names', "Quality" + "_" + yeardoys_required
-
-    out_quality_file.save
-    IF META THEN out_rast_list.quality_file = envimetaspectralraster(out_quality_file, spatialref = result.spatialref) $
-    ELSE out_rast_list.quality_file = envimetaspectralraster(out_quality_file, spatialref = in_rely.spatialref)
-    out_quality_file.close
-
-    ; Cleanup
-    in_rely.close
-    in_ui.close
-    in_blue.close
-
-
-  ENDIF ELSE print, '# --- Quality File already existing ---- '
-
-  ; If opts.mapscape is 1 then look for existance of smoothed single bands and try building  the smoothed file
-  ; Will probably remove this completely !
-
-  IF opts.mapscape EQ 100 THEN BEGIN
-
-    smooth_dirname = or_ts_folder+path_sep()+'VI_Smoothed'
-    outname_smooth = smooth_dirname+path_sep()+strtrim(proc_year,2) + path_sep()+file_basename(out_filename) + $
-      '_VI_smooth_'+yeardoys_required[0]+'_'+yeardoys_required[-1]+'.dat'
-
-    ; If multitemporal smoothed file doesn't exist, create it from single date files
-    IF ((file_test(outname_smooth) EQ 0) OR (force_rebuild EQ 1)) THEN BEGIN
-
-      file_mkdir,smooth_dirname
-      in_smoothfiles_required = strarr(n_elements(yeardoys_required))
-      pattern = '*EVIsmooth*.dat'     ; Set the patern to search for one of theinputs (e.g., NDVI )
-      in_files = file_search(smooth_dirname+path_sep()+pattern)   ; Find the file. Issue error if 0 or more than one file
-      ; Create list of required smoothed single band files
-      FOREACH yeardoy, yeardoys_required, index_file DO BEGIN
-        result = where(strmatch(in_files, '*'+yeardoy+'*.dat'), count_files)
-        IF count_files EQ 1 AND  strmid(in_file[result], 3, /REVERSE_OFFSET) EQ '.dat' THEN BEGIN
-          in_smoothfiles_required [index_file] = in_file[result]
-        ENDIF ELSE BEGIN
-          print, 'One or more of the required EVI smoothed files is missing. Please check. Exiting ! '
-          stop
-        ENDELSE
-      ENDFOREACH
-
-      ; Create multiband file
-      FOREACH smoothfile, in_smoothfiles_required, file_ind  DO BEGIN
-        IF file_ind EQ 0 THEN BEGIN
-          raster_list = e.openraster(file)
-        ENDIF ELSE BEGIN
-          raster_list = [raster_list, e.openraster(file)]
-        ENDELSE
-        result = envimetaspectralraster(raster_list, spatialref = raster.spatialref)
-        result.metadata.additem, 'Wavelength', doys_required
-        result.metadata.updateitem, 'Band Names', "VI_Smooothed" + yeardoys_required
-        IF file_test(outname_smooth) EQ 1 THEN BEGIN
-          file_delete, outname_smooth
-          file_delete, (outname_smooth.remove(-3)+'hdr')
-        ENDIF
-        file_mkdir, file_dirname(OUT_NAME)
-        result.export, outname_smooth, 'envi', interleave = opts.interleave, data_ignore_value = no_data
-
-        ; Cleanup
-        FOREACH item, raster_list DO item.close
-        result.close
-      ENDFOREACH
-
-    ENDIF ELSE print, '# ---' + in_bands_or[band] + ' Smoothed File already existing ---- '; End of check on file existence
-
-  ENDIF
+;  out_files_list.quality_file = path_create([in_ts_folder+path_sep()+strtrim(proc_year,2), $
+;    "Quality"+'_ts_input_'+yeardoys_required[0]+'_'+yeardoys_required[-1]+'.dat'])
+;  print, '# --- Building Quality File ---- '
+;
+;  ; Check if quality file already existing
+;  IF ((file_test(out_files_list.quality_file) EQ 0) OR (force_rebuild EQ 1)) THEN BEGIN
+;
+;    file_delete,out_files_list.quality_file,/ALLOW_NONEXISTENT
+;    file_delete,out_files_list.quality_file.remove(-3)+'.hdr',/ALLOW_NONEXISTENT
+;
+;    IF META EQ 0 THEN BEGIN
+;      ; open files needed to compute quality
+;      in_rely = e.openraster(out_files_list.rely_file)
+;      in_UI   = e.openraster(out_files_list.ui_file)
+;      in_blue = e.openraster(out_files_list.blue_file)
+;    ENDIF ELSE BEGIN ; OR use the already available METAs
+;      in_rely = out_rast_list.rely_file
+;      in_UI   = out_rast_list.ui_file
+;      in_blue = out_rast_list.blue_file
+;    ENDELSE
+;
+;    ; start computing quality
+;    tileIterator = in_rely.createtileiterator(MODE = 'spectral')
+;
+;    ; Initialize output quality raster
+;    IF META THEN interleave = 'bsq' ELSE interleave = 'bip'
+;    out_quality_file = enviraster(URI = out_files_list.quality_file, NROWS = in_rely.nrows, NCOLUMNS = in_rely.ncolumns, $
+;      NBANDS = in_rely.nbands, DATA_TYPE = in_rely.data_type, interleave = interleave)
+;
+;    FOREACH tile, tileIterator, line DO BEGIN ; cycle on lines ( = tiles)
+;
+;      IF line MOD 100 EQ 0 THEN print , line
+;      data_rely   = transpose(tile)
+;      data_ui     = (in_UI.getdata(SUB_RECT = tileIterator.current_subrect,BANDS = tileiterator.current_band))
+;      data_blue   = (in_blue.getdata(BANDS = tileiterator.current_band, SUB_RECT = tileIterator.current_subrect))
+;      out_quality = 1B*(data_rely EQ 1)+2B*(data_rely GT 1)+2B*(data_rely LT 0)
+;
+;      ;--- Update reliability on "intermediate" condition using usefulness index
+;      ones   = where(data_Rely EQ 1  , count_1)
+;      IF count_1 NE 0 THEN BEGIN
+;        ui_one      = data_ui[ones]
+;        quality_one = 0B*(ui_one LE 2) +1B*((ui_one GT 2) AND (ui_one LE 10)) + 2B*(ui_one GT 10)
+;        out_quality [ones] = quality_one
+;      ENDIF
+;
+;      ;--- Update quality on the basis of blue band (see the excel file in the "docs" folders for the coding)
+;      out_quality = 0B*((data_blue LE cloud_clear) AND (out_quality EQ 0)) + $
+;        1B*((out_quality EQ 1) AND (data_blue LE cloud_full))  + $
+;        1B*((out_quality EQ 0) AND (data_blue GT cloud_clear) AND (data_blue LE cloud_full)) + $
+;        2B*((out_quality EQ 2) OR  (data_blue GT cloud_full))
+;
+;      ; Save line on output file
+;      out_quality_file.setdata, out_quality, SUB_RECT=tileIterator.current_subrect, BANDS = tileiterator.current_band
+;
+;    ENDFOREACH
+;
+;    ; Add metadata to quality file and save it
+;    out_quality_file.metadata.additem, 'Wavelength', doys_required
+;    out_quality_file.metadata.additem, 'Band Names', "Quality" + "_" + yeardoys_required
+;
+;    out_quality_file.save
+;    IF META THEN out_rast_list.quality_file = envimetaspectralraster(out_quality_file, spatialref = result.spatialref) $
+;    ELSE out_rast_list.quality_file = envimetaspectralraster(out_quality_file, spatialref = in_rely.spatialref)
+;    out_quality_file.close
+;
+;    ; Cleanup
+;    in_rely.close
+;    in_ui.close
+;    in_blue.close
+;
+;
+;  ENDIF ELSE print, '# --- Quality File already existing ---- '
+;
+;  ; If opts.mapscape is 1 then look for existance of smoothed single bands and try building  the smoothed file
+;  ; Will probably remove this completely !
+;
+;  IF opts.mapscape EQ 100 THEN BEGIN
+;
+;    smooth_dirname = or_ts_folder+path_sep()+'VI_Smoothed'
+;    outname_smooth = smooth_dirname+path_sep()+strtrim(proc_year,2) + path_sep()+file_basename(out_filename) + $
+;      '_VI_smooth_'+yeardoys_required[0]+'_'+yeardoys_required[-1]+'.dat'
+;
+;    ; If multitemporal smoothed file doesn't exist, create it from single date files
+;    IF ((file_test(outname_smooth) EQ 0) OR (force_rebuild EQ 1)) THEN BEGIN
+;
+;      file_mkdir,smooth_dirname
+;      in_smoothfiles_required = strarr(n_elements(yeardoys_required))
+;      pattern = '*EVIsmooth*.dat'     ; Set the patern to search for one of theinputs (e.g., NDVI )
+;      in_files = file_search(smooth_dirname+path_sep()+pattern)   ; Find the file. Issue error if 0 or more than one file
+;      ; Create list of required smoothed single band files
+;      FOREACH yeardoy, yeardoys_required, index_file DO BEGIN
+;        result = where(strmatch(in_files, '*'+yeardoy+'*.dat'), count_files)
+;        IF count_files EQ 1 AND  strmid(in_file[result], 3, /REVERSE_OFFSET) EQ '.dat' THEN BEGIN
+;          in_smoothfiles_required [index_file] = in_file[result]
+;        ENDIF ELSE BEGIN
+;          print, 'One or more of the required EVI smoothed files is missing. Please check. Exiting ! '
+;          stop
+;        ENDELSE
+;      ENDFOREACH
+;
+;      ; Create multiband file
+;      FOREACH smoothfile, in_smoothfiles_required, file_ind  DO BEGIN
+;        IF file_ind EQ 0 THEN BEGIN
+;          raster_list = e.openraster(file)
+;        ENDIF ELSE BEGIN
+;          raster_list = [raster_list, e.openraster(file)]
+;        ENDELSE
+;        result = envimetaspectralraster(raster_list, spatialref = raster.spatialref)
+;        result.metadata.additem, 'Wavelength', doys_required
+;        result.metadata.updateitem, 'Band Names', "VI_Smooothed" + yeardoys_required
+;        IF file_test(outname_smooth) EQ 1 THEN BEGIN
+;          file_delete, outname_smooth
+;          file_delete, (outname_smooth.remove(-3)+'hdr')
+;        ENDIF
+;        file_mkdir, file_dirname(OUT_NAME)
+;        result.export, outname_smooth, 'envi', interleave = opts.interleave, data_ignore_value = no_data
+;
+;        ; Cleanup
+;        FOREACH item, raster_list DO item.close
+;        result.close
+;      ENDFOREACH
+;
+;    ENDIF ELSE print, '# ---' + in_bands_or[band] + ' Smoothed File already existing ---- '; End of check on file existence
+;
+;  ENDIF
 
   ; Cleanup to close all open files
 
