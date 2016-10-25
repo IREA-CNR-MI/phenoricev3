@@ -399,7 +399,9 @@
 ;      out_filename = "/home/lb/Temp/prova3/provaout"
       file_mkdir,file_dirname(out_filename)
 
-    ENDIF
+    ENDIF ELSE BEGIN
+      out_filename = path_create([out_filename,(string(proc_year)).trim(),'Phenorice_out_'])
+    ENDELSE
 
     ; Initialize structure of file names and of metaraster files (used if "META")
     out_files_list = {evi_file: "", ndfi_file:"", blue_file :"", $
