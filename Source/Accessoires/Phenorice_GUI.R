@@ -7,10 +7,10 @@
 #  Start Building the GUI
 #- ------------------------------------------------------------------------------- -#
 general_opts = list(in_folder = '', out_folder = '', mask_file = '', tempin_folder = '',
-										seas1_check = 'On', seas1_start_day = 1, seas1_end_day = 31, seas1_start_month = 1 , seas1_end_month = 4, seas1_start_doy = 1, seas1_end_doy = 1,
-										seas2_check = 'On', seas2_start_day = 1, seas2_end_day = 31, seas2_start_month = 1 , seas2_end_month = 4, seas2_start_doy = 1, seas2_end_doy = 1,
-										seas3_check = 'On', seas3_start_day = 1, seas3_end_day = 31, seas3_start_month = 1 , seas3_end_month = 4, seas3_start_doy = 1, seas3_end_doy = 1,
-										seas4_check = 'On', seas4_start_day = 1, seas4_end_day = 31, seas4_start_month = 1 , seas4_end_month = 4, seas4_start_doy = 1, seas4_end_doy = 1,
+										seas1_check = 'On', seas1_start_day = 1, seas1_end_day = 31, seas1_start_month = 1 ,  seas1_end_month = 3, seas1_start_doy = 1, seas1_end_doy = 1,
+										seas2_check = 'On', seas2_start_day = 1, seas2_end_day = 30, seas2_start_month = 4 ,  seas2_end_month = 6, seas2_start_doy = 1, seas2_end_doy = 1,
+										seas3_check = 'On', seas3_start_day = 1, seas3_end_day = 30, seas3_start_month = 7 ,  seas3_end_month = 9, seas3_start_doy = 1, seas3_end_doy = 1,
+										seas4_check = 'On', seas4_start_day = 1, seas4_end_day = 31, seas4_start_month = 10 , seas4_end_month = 12, seas4_start_doy = 1, seas4_end_doy = 1,
 										start_year = 2014, end_year = 2014,
 										avg_check = 'On', avg_thresh = 5500,
 										maxth_check = 'On',maxth_thresh = 4000, vi_decr_thresh = 0.55, #vi_decr_width = 8*10, #vi_decr_check = 'On',
@@ -19,6 +19,7 @@ general_opts = list(in_folder = '', out_folder = '', mask_file = '', tempin_fold
 										lgt_check = 'On', lgtlow = 40, lgtup = 90,
 										maxeos_check = 'On', maxeoslow = 30, maxeosup = 50,
 										lst_check = 'On' ,lst_thresh = 15,
+										shape_check = 'On' ,shape_meth = 1, shape_thresh = 0.9, 
 										IDL_exe = '"C:/Program Files/Exelis/IDL82/bin/bin.x86_64/idl.exe"',
 										IDL_Dir = '"S:/source_code/IDL/Applications/Phenorice_v2/Phenorice_v22/source/"')
 require(gWidgets)
@@ -42,7 +43,7 @@ sel_prod <- general_opts$sel_prod
 #- ------------------------------------------------------------------------------- -#
 {{infold_frame <- gframe(text = '<span foreground="red" size="large">Input Folders and Files</span>', markup = T, container=main_group, expand = T,spacing = 15, horizontal = F)    			# Frame group
 infold_group <- ggroup(horizontal = TRUE, container=infold_frame)  				# Main group
-infold_lab <- glabel(text = 'Folder Containing MODIS Original Time Series', justify = "right" , container=infold_group, width = 57)
+infold_lab <- glabel(text = 'Folder Containing MODIS Original Time Series: ', justify = "right" , container=infold_group, width = 57)
 infold_wid <- gedit(text = general_opts$in_folder, justify = "right" , container=infold_group, width = 57)			# Selected file
 
 fold_choose <- gbutton("Browse", handler=function(h,...) {
@@ -57,7 +58,7 @@ general_opts$in_folder = format(choice, justify = "left")	# 	On new selection,  
 
 
 mask_group <- ggroup(horizontal = TRUE, container=infold_frame)  				# Main group
-mask_lab <- glabel(text = 'Land Cover mask file (Optional)', justify = "right" , container=mask_group, width = 57)
+mask_lab <- glabel(text = 'Land Cover mask file (Optional): ', justify = "right" , container=mask_group, width = 57)
 addSpring(mask_group)
 mask_wid <- gedit(text = format(general_opts$mask_file, justify = "right") , container=mask_group, width = 57)			# Selected file
 fold_choose <- gbutton("Browse", handler=function(h,...) {choice<-gfile(type="open", text="Select the LC MAsk File...")		# File selection widget
@@ -66,7 +67,7 @@ general_opts$mask_file = format(choice, justify = "left")	# 	On new selection,  
 }}, container=mask_group)
 
 tempinfold_group <- ggroup(horizontal = TRUE, container=infold_frame)  				# Main group
-tempinfold_lab <- glabel(text = 'Folder For Storage of Yearly Input Files', justify = "right" , container=tempinfold_group, width = 57)
+tempinfold_lab <- glabel(text = 'Folder For Storage of Yearly Input Files: ', justify = "right" , container=tempinfold_group, width = 57)
 addSpring(tempinfold_group)
 tempinfold_wid <- gedit(text = general_opts$tempin_folder, justify = "right" , container=tempinfold_group, width = 57)			# Selected file
 fold_choose <- gbutton("Browse", handler=function(h,...) {choice<-gfile(type="selectdir", text="Select the Output Folder for MODIS data...")		# File selection widget
@@ -82,7 +83,7 @@ outfold_group <- ggroup(horizontal = TRUE, container=outfold_frame)  				# Main 
 outfold_lab <- glabel(text = 'Main Folder For Output Storage', justify = "right" , container=outfold_group, width = 57)
 addSpring(outfold_group)
 outfold_wid <- gedit(text = format(general_opts$out_folder, justify = "right") , container=outfold_group, width = 57)			# Selected file
-fold_choose <- gbutton("Browse", handler=function(h,...) {choice<-gfile(type="save", text="Select the Output Filename.")		# File selection widget
+fold_choose <- gbutton("Browse", handler=function(h,...) {choice<-gfile(type="selectdir", text="Select the Output Filename.")		# File selection widget
 if(! is.na(choice)){svalue(outfold_wid)<-choice						## On new selection, set value of the label widget
 general_opts$out_folder = format(choice, justify = "left")	# 	On new selection,  Set value of the selected variable
 }}, container=outfold_group)
@@ -183,20 +184,21 @@ avg_wid <- gedit(text = format(general_opts$avg_thresh, justify = "right") , con
 addSpring(avg_group)
 avg_check = gradio(items = c('On','Off'), text = 'Select', container=avg_group, selected = match(general_opts$avg_check, c('On','Off')), horizontal = T)
 
-maxth_group <- ggroup(horizontal = TRUE, container=criteria_group)  				# Main group
-maxth_lab <- glabel(text = 'VI of Max must be above:         ', justify = "right" , container=maxth_group, width = 57)
+maxth_group <- ggroup(horizontal = TRUE, container=criteria_group, expand = T)  				# Main group
+
+maxth_lab <- glabel(text = 'VI of Max must be above:                ', justify = "right" , container=maxth_group, width =50)
 maxth_wid <- gedit(text = format(general_opts$maxth_thresh, justify = "right") , container=maxth_group, width = 8)
 addSpring(maxth_group)
 maxth_check = gradio(items = c('On','Off'), text = 'Select', container=maxth_group, selected = match(general_opts$maxth_check, c('On','Off')), horizontal = T)
 
 minth_group <- ggroup(horizontal = TRUE, container=criteria_group)  				# Main group
-minth_lab <- glabel(text = 'VI of min must be below:         ', justify = "right" , container=minth_group, width = 8)
+minth_lab <- glabel(text = 'VI of min must be below:                ', justify = "right" , container=minth_group, width = 8)
 minth_wid <- gedit(text = format(general_opts$minth_thresh, justify = "right") , container=minth_group, width = 8)
 addSpring(minth_group)
 minth_check = gradio(items = c('On','Off'), text = 'Select', container=minth_group, selected = match(general_opts$minth_check, c('On','Off')), horizontal = T)
 
 flood_group <- ggroup(horizontal = TRUE, container=criteria_group)  				# Main group
-flood_lab <- glabel(text = 'Flooding Detected within:        ', justify = "right" , container=flood_group, width = 8)
+flood_lab <- glabel(text = 'Flooding Detected within:               ', justify = "right" , container=flood_group,  width = 8)
 flood_wid <- gedit(text = format(general_opts$flood_wid, justify = "right") , container=flood_group, width = 8)
 flood_lab2 <- glabel(text = ' Days from minimum ', justify = "right" , container=flood_group, width = 8)
 #		vi_decr_wid2 <- gedit(text = format(general_opts$vi_decr_width, justify = "right") , container=vi_decr_group, width = 8)
@@ -206,7 +208,7 @@ flood_check = gradio(items = c('On','Off'), text = 'Select', container=flood_gro
 #
 
 lgt_group <- ggroup(horizontal = TRUE, container=criteria_group)  				# Main group
-lgt_lab <- glabel(text = 'Vegetative Season Length -   Min:', justify = "right" , container=lgt_group, width = 8)
+lgt_lab <- glabel(text = 'Vegetative Season Length -   Min: ', justify = "right" , container=lgt_group, width = 8)
 lgtlow_wid <- gspinbutton(from = 60, to = 180, by = 8, container=lgt_group,horizontal =F, width = 30, value = general_opts$lgtlow )
 lgt_lab <- glabel(text = ' Max: ', justify = "right" , container=lgt_group, width = 8)
 lgtup_wid <- gspinbutton(from = 60, to = 180, by = 8, container=lgt_group,horizontal =F, width = 30 , value = general_opts$lgtup )
@@ -214,7 +216,7 @@ addSpring(lgt_group)
 lgt_check = gradio(items = c('On','Off'), text = 'Select', container=lgt_group, selected = match(general_opts$lgt_check, c('On','Off')), horizontal = T)
 
 maxeos_group <- ggroup(horizontal = TRUE, container=criteria_group)  				# Main group
-maxeos_lab <- glabel(text = 'Maturity to Harvest Length - Min:', justify = "right" , container=maxeos_group, width = 8)
+maxeos_lab <- glabel(text = 'Maturity to Harvest Length - Min: ', justify = "right" , container=maxeos_group, width = 8)
 maxeoslow_wid <- gspinbutton(from = 25, to = 50, by = 8, container=maxeos_group,horizontal =F, width = 30, value = general_opts$maxeoslow )
 maxeos_lab <- glabel(text = ' Max: ', justify = "right" , container=maxeos_group, width = 8)
 maxeosup_wid <- gspinbutton(from = 25, to = 50, by = 8, container=maxeos_group,horizontal =F, width = 30 , value = general_opts$maxeosup )
@@ -223,24 +225,28 @@ vi_decr_wid <- gedit(text = format(general_opts$vi_decr_thresh, justify = "right
 addSpring(maxeos_group)
 maxeos_check = gradio(items = c('On','Off'), text = 'Select', container=maxeos_group, selected = match(general_opts$maxeos_check, c('On','Off')), horizontal = T)
 
-# vi_decr_group <- ggroup(horizontal = TRUE, container=maxcriteria_group)  				# Main group
-# 
-# 
-# vi_decr_lab <- glabel(text = ' % in ', justify = "right" , container=vi_decr_group, width = 8)
-# vi_decr_wid2 <- gedit(text = format(general_opts$vi_decr_width, justify = "right") , container=vi_decr_group, width = 8)
-# vi_decr_lab2<- glabel(text = 'Days after Max', container=vi_decr_group)
-# addSpace(vi_decr_group, 50, horizontal=TRUE)
-# vi_decr_check = gradio(items = c('On','Off'), text = 'Select', container=vi_decr_group, selected = match(general_opts$vi_decr_check, c('On','Off')), horizontal = T)
-
-
-
 lst_group = ggroup(horizontal = TRUE, container=criteria_group)  				# Main group
-lst_lab <- glabel(text = 'LST on Min must be above:', justify = "right" , container=lst_group, width = 8)
+lst_lab <- glabel(text = 'LST on Min must be above:         ', justify = "right" , container=lst_group, width = 8)
 lst_wid <- gedit(text = format(general_opts$lst_thresh, justify = "right") , container=lst_group, width = 8)
 lst_lab2 <- glabel(text = ' Degrees C', justify = "right" , container=lst_group, width = 8)
 addSpace(lst_group, 135, horizontal=TRUE)
 addSpring(lst_group)
 lst_check = gradio(items = c('On','Off'), text = 'Select', container=lst_group, selected = match(general_opts$lst_check, c('On','Off')), horizontal = T)
+
+
+shape_group <- ggroup(horizontal = TRUE, container=criteria_group)  				# shape group
+
+shape_lab <- glabel(text = 'Check shape method: ', justify = "right" , container=shape_group, width = 8)
+shape_wid <- gdroplist(c("hypertan","linear"), selected = general_opts$shape_meth, container=shape_group) 
+shape_lab2 <- glabel(text = 'R2 threshold: ', justify = "right" , container=shape_group, width = 8)
+shapethresh_wid <- gspinbutton(from = 0, to = 1, by = 0.05, container=shape_group,horizontal =F, width = 30, value = general_opts$shape_thresh )
+addSpace(shape_group, 50, horizontal=TRUE)
+addSpring(shape_group)
+shape_check = gradio(items = c('On','Off'), text = 'Select', container=shape_group, selected = match(general_opts$shape_check, c('On','Off')), horizontal = T)
+
+
+
+
 }}
 
 {{but_group <- ggroup(container = main_group, horizontal = TRUE)
@@ -350,6 +356,10 @@ lst_check = gradio(items = c('On','Off'), text = 'Select', container=lst_group, 
 	general_opts$lst_check = svalue(lst_check)
 	general_opts$LSsT_thresh = svalue(lst_wid)
 	
+	general_opts$shape_check = svalue(shape_check)
+	general_opts$shape_met = svalue(shape_wid)
+	general_opts$shape_thresh = svalue(shapethresh_wid)
+	
 	save(general_opts, file = RData_file)
 	dir.create(general_opts$out_folder, recursive = T)
 #	txt_file = file.path(general_opts$out_folder,'phenorice_options.txt')
@@ -456,6 +466,10 @@ save_but <- gbutton(text = 'Save Options', container = but_group, handler = func
 		general_opts$lst_check = svalue(lst_check)
 		general_opts$LSsT_thresh = svalue(lst_wid)
 		
+		general_opts$shape_check = svalue(shape_check)
+		general_opts$shape_met = svalue(shape_wid)
+		general_opts$shape_thresh = svalue(shapethresh_wid)
+		
 		save(general_opts, file = RData_file)
 		dir.create(general_opts$out_folder, recursive = T)
 		#txt_file = file.path(general_opts$out_folder,'phenorice_options.txt')
@@ -528,6 +542,10 @@ load_but <- gbutton(text = 'Load Options', container = but_group, handler = func
 		
 		svalue(lst_check) = general_opts$lst_check 
 		svalue(lst_wid) = general_opts$LSsT_thresh 
+		
+		svalue(shape_check) = general_opts$shape_check 
+		svalue(shape_wid) = general_opts$shape_meth
+		svalue(shapethresh_wid)= general_opts$shape_thresh
 		
 		save(general_opts, file = RData_file)
 		

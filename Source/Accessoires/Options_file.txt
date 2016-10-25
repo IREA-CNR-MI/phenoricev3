@@ -1,7 +1,7 @@
-/home/lb/Temp/buttami
-/home/lb/Temp/buttami/prova/
-
-
+Y:\PHL_Clipped\Original_MODIS
+Y:\PHL_Clipped\Outputs2
+Y:\PHL_Clipped\Ancillary\Land_Cover\Mask.dat
+Y:\PHL_Clipped\inputs
 On
 1
 30
@@ -30,8 +30,8 @@ On
 12
 274
 365
-2014
-2014
+2013
+2013
 On
 5500
 On
@@ -49,6 +49,10 @@ On
 50
 On
 15
+On
+1
 "C:/Program Files/Exelis/IDL82/bin/bin.x86_64/idl.exe"
 "S:/source_code/IDL/Applications/Phenorice_v2/Phenorice_v22/source/"
 15
+hypertan
+0.95

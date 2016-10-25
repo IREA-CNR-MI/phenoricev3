@@ -24,8 +24,8 @@
   ;- --------------------------------------------------------- ;
   ; Set some options for test processing
   ;- --------------------------------------------------------- ;
-  test_data      = 1             ; Leads to using default input data and parameters (for testing purposes)
-  test_folder    = '/home/lb/Temp/PHL_Clipped/'  ; testing data folder
+  test_data      = 0           ; Leads to using default input data and parameters (for testing purposes)
+  test_folder    = 'Y:\PHL_Clipped'  ; testing data folder
   mapscape       = 1             ; Specify to use "mapscape-like" input files --> Leads to changes in NODATA values and (possibly)
   ; generate smoothed file from MAPSCAPE data!!!
   sel_seasons    = [1,1,1,1]
@@ -34,7 +34,7 @@
   doy_3q         = [181,270]
   doy_4q         = [271,365]
 
-  start_year     = 2012          ; Start and end year for the test run
+  start_year     = 2013          ; Start and end year for the test run
   end_year       = 2013
 
   shp_check      = 1
@@ -187,10 +187,11 @@
 
     ; TODO: Create a IDL Widget GUI
     R_GUI_function_path = programrootdir()+'Accessoires'+path_sep()+'Phenorice_GUI.R'
-    launch_string = 'Rscript'+' '+ '"'+R_GUI_function_path +'"'+' "'+file_dirname(R_GUI_function_path)+ '"'
+    launch_string = 'Rscript.exe'+' '+ '"'+R_GUI_function_path +'"'+' "'+file_dirname(R_GUI_function_path)+ '"'
     spawn,launch_string, choice
     ;out_folder = strmid(out_folder, 5,(strlen(out_folder)-6))    ; Get the out_folder from the GUI
     print, choice
+    
     ;- --------------------------------------------------------------- ;
     ; Read the input options from the txt file saved by Phenorice_GUI (TO be removed after switching to IDL GUI
     ;- --------------------------------------------------------------- ;
@@ -281,6 +282,8 @@
     ENDIF
 
     ; set-up processing options using data retrieved from GUI
+    
+    if (fix(in_opts_arr[52]) EQ 1) then check_shape_meth = "hyperbolic" else check_shape_meth = "linear"
 
     opts = { $
 
@@ -337,8 +340,8 @@
       lst_thresh      : fix(in_opts_arr[51] ),$ ; Threshold for LST (in °C)
 
       ; criteria for vi shape checks
-      shp_check        : shp_check, $
-      check_shape_meth : "hyperbolic", $
+      shp_check        : fix(in_opts_arr[52]), $
+      check_shape_meth : check_shape_meth, $
       check_R2         : check_R2, $
 
       ;---- Selected outputs
@@ -391,9 +394,9 @@
 
     IF (test_data EQ 1) THEN BEGIN
       ; Out file name if TEST_DATA
-;      out_filename = path_create([test_folder,'Output',(string(proc_year)).trim(),'Phenorice_out_'])
+      out_filename = path_create([test_folder,'Output',(string(proc_year)).trim(),'Phenorice_out_'])
 ;      out_filename = path_create(["/home/lb/Temp/buttami/tests_phrice",(string(proc_year)).trim(),'Phenorice_out_'])
-      out_filename = "/home/lb/Temp/prova3/provaout"
+;      out_filename = "/home/lb/Temp/prova3/provaout"
       file_mkdir,file_dirname(out_filename)
 
     ENDIF
