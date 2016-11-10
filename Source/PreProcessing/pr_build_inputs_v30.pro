@@ -30,7 +30,7 @@
 ; :License: GPL>3.0
 ;-
 FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_derived, out_filename, $
-  folder_suffixes_or, opts, nodatas_or,  META, out_files_list, out_rast_list,  force_rebuild
+  folder_suffixes_or, opts, nodatas_or,  META, out_files_list, out_rast_list,  force_rebuild, resizeonmask
   COMPILE_OPT idl2
   COMPILE_OPT hidden
 
@@ -146,7 +146,7 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
 
     ; build name for input phenorice file of the parameter (e.g., EVI file)
     out_name = path_create([in_ts_folder+path_sep()+strtrim(proc_year, 2),in_bands_or[band]+ $
-      '_ts_input_'+yeardoys_required[0]+'_'+yeardoys_required[-1]+'.dat'])
+      '_ts_input_'+yeardoys_required[0]+'_'+yeardoys_required[-1]+'.json'])
 
     ;    IF META THEN out_name = out_name.remove(-3)+'json'   ; If META, save a virtual raster as a json file !
     out_files_list.(band) = out_name
@@ -195,7 +195,7 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
               pr_build_filler_v30, avail_years_files, no_data, in_bands_or[band], out_name_filler
             ENDELSE
           ENDIF
-          in_files_required [index_files]  =  out_name_filler  ; Put the filler filename in the correct position of the input files list
+          in_files_required [index_files]  =  out_name_filler  ; Put tout_rast_list.doy_filehe filler filename in the correct position of the input files list
 
         ENDELSE ; end else on existance of required file
 
@@ -231,23 +231,36 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
 
       ; Create multiband file using the single date rasters
       result = envimetaspectralraster(raster_list, spatialref = raster.spatialref)
-
+     
       ; on LST input, check the dimensions. If not equal to other files do a quick layer stack
       ;(needed because MODIStsp LST output may have slightly different dimensions from the other
       ; bands !
 
       IF (band EQ 6) THEN BEGIN
 
-        IF META THEN compare_file = out_rast_list.(0) ELSE compare_file = e.openraster(out_files_list.(0))
+        IF META THEN  compare_file = out_rast_list.(0) ELSE compare_file = out_rast_list.(0)
         ncols = compare_file.ncolumns
         nrows = compare_file.nrows
         IF (result.ncolumns NE ncols OR result.nrows NE nrows) THEN BEGIN
           ref_SpatialGridRaster = envispatialgridraster(envisubsetraster(compare_file, BANDS=1), GRID_DEFINITION = Grid)
           obj_SpatialGridRaster = envispatialgridraster(result, GRID_DEFINITION = Grid)
-          result = envimetaspectralraster([obj_SpatialGridRaster])
+          result = envimetaspectralraster([obj_SpatialGridRaster], spatialref = obj_SpatialGridRaster.spatialref)
+          
         ENDIF
 
       ENDIF
+      
+      IF (resizeonmask EQ 1) THEN BEGIN
+
+        ; get the spatial extent from the mask
+        mask = e.openraster(out_files_list.LC_FILE)
+        UL = mask.spatialref.TIE_POINT_MAP
+        LR = [UL[0] + (mask.ncolumns-1)*mask.spatialref.PIXEL_SIZE[0],UL[1] - (mask.nrows-1)*mask.spatialref.PIXEL_SIZE[1]]
+        subset = envisubsetraster(result, SUB_RECT=[UL[0],LR[1],LR[0],UL[1]], SPATIALREF = mask.spatialref)
+        result = subset
+      ENDIF
+
+      
       
       ; add 8 to the reported acquisition DOYs --> done because usually the real DOYs are
       ; in the last part of the period, so that when "substituting" real doy with theoretical
@@ -259,7 +272,14 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
       result.metadata.additem,    'time', times
       result.metadata.updateitem, 'Band Names', in_bands_or[band] + "_" + yeardoys_required
 
-      out_rast_list.(band) = result   ; Put the open virtual raster in the list of required rasters
+;      resultHash     = result.dehydrate()
+;      resultHashJSON = json_serialize(resultHash)
+;      jsonFile       = out_files_list.(band)
+;      openw, LUN, jsonFile, /GET_LUN
+;      printf, LUN, resultHashJSON
+;      free_lun, LUN
+
+       out_rast_list.(band) = result   ; Put the open virtual raster in the list of required rasters
 
       ; If not using META, then save the multitemporal file to disk
 

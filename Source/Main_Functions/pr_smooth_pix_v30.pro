@@ -35,7 +35,8 @@ FUNCTION pr_smooth_pix_v30, opts, vi_pix, qa_pix, doy_pix, nb, doys_reg,$
   ; speed improvement ?
 
   doys_ord    = sort(doy_pix)
-  vi_pix_ord  = vi_pix[doys_ord]
+  vi_pix_ord  = float(vi_pix[doys_ord])
+  vi_pix_ord[where(vi_pix_ord EQ 32767)] = !values.F_NaN
   doy_pix_ord = doy_pix[doys_ord]
   qa_pix_ord  = qa_pix[doys_ord]
   vi_pix_fl   = vi_pix_ord
@@ -47,16 +48,16 @@ FUNCTION pr_smooth_pix_v30, opts, vi_pix, qa_pix, doy_pix, nb, doys_reg,$
     check_arr4     = vi_pix_ord[[k-2, k-1, k+1,k+2]]
     check_arr6     = vi_pix_ord[[k-3,k-2, k-1, k+1,k+2,k+3]]
     wgt            = err_pix[[k-3,k-2, k-1, k+1,k+2,k+3]]
-    MED_VAL        = mean(CHECK_ARR4)
-    STDEV_val      = stdev(CHECK_ARR4)
+    MED_VAL        = mean(CHECK_ARR4, /NaN)
+    STDEV_val      = STDDEV(CHECK_ARR4, /NAN)
 
-    IF (vi_pix_ord[k] LT MED_VAL-2*STDEV_val) OR  (vi_pix_ord[k] GT MED_VAL+2*STDEV_val) THEN BEGIN
+    IF (vi_pix_ord[k] LT MED_VAL-2*STDEV_val) OR (vi_pix_ord[k] GT MED_VAL+2*STDEV_val) OR (finite(vi_pix_ord[k]) EQ 0) THEN BEGIN
 
       ; OPTION 1 GAP FILLING:  SECOND ORDER POLINOMIAL
       ;result       = poly_fit(x_vect, CHECK_ARR6, 2, MEASURE_ERRORS=measure_errors, Yfit = Yfit,/DOUBLE,status=status)
-      result = polyfitfast(x_vect, CHECK_ARR6, 2, Yfit, w = wgt)
+      result = polyfitfast(x_vect[where(finite(CHECK_ARR6) EQ 1)], CHECK_ARR6[where(finite(CHECK_ARR6) EQ 1)], 2, w = wgt)
       err_pix[k]   = 3000
-      vi_pix_fl[k] = Yfit[opts.win_dim_r]
+      vi_pix_fl[k] = result[0] + result[1]*4 + result[2]*16
 
     ENDIF
 

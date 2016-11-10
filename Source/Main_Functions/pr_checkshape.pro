@@ -54,7 +54,7 @@ function pr_checkshape, opts, smooth_pix, out_mindoy, out_maxdoy, out_eosdoy, do
     
       
     
-    IF opts.check_shape_meth EQ "hyperbolic" THEN BEGIN
+    IF opts.check_shape_meth EQ "hypertan" THEN BEGIN
 
       pos_max = where(doys_reg EQ out_maxdoy[okseason])
       pos_min = where(doys_reg EQ out_mindoy[okseason])
@@ -65,8 +65,8 @@ function pr_checkshape, opts, smooth_pix, out_mindoy, out_maxdoy, out_eosdoy, do
 
       doy_sub    = doys_reg [pos_min:pos_eos]
       smooth_sub = smooth_pix [pos_min:pos_eos]
-      min_EVI = smooth_pix[pos_min]
-      range_EVI = smooth_pix[pos_max]-min_EVI
+      min_EVI    = smooth_pix[pos_min]
+      range_EVI  = smooth_pix[pos_max]-min_EVI
 
       ; P[0] = Minimum
       ; P[1] = Range
@@ -92,11 +92,12 @@ function pr_checkshape, opts, smooth_pix, out_mindoy, out_maxdoy, out_eosdoy, do
       
       ; Try to fit the function
       
-      result = MPFITEXPR(expr, doy_sub, smooth_sub, rerr, start, parinfo = parinfo, STATUS = STATUS, YFIT=YFIT, /QUIET)
+      ;result  = MPFITEXPR(expr, doy_sub, smooth_sub, rerr, start, parinfo = parinfo, STATUS = STATUS, YFIT=YFIT)
+      result = MPFITEXPR(expr, doy_sub, smooth_sub, rerr, start, parinfo = parinfo, STATUS = STATUS, YFIT=YFIT, ftol = 0.1, /quiet)
       
       if check EQ 1 then begin
         plot, doy_sub, smooth_sub                                      ; Plot data
-        oplot, doy_sub, mpevalexpr(expr, doy_sub, result), color = 220                ; Plot model
+        oplot, doy_sub, mpevalexpr(expr, doy_sub, result2), color = 220                ; Plot model
         oplot, doy_sub, smooth_pix [pos_min:pos_eos], color = 150                ; Plot model
         R = GET_KBRD()
       endif
