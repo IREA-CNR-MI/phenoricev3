@@ -149,7 +149,7 @@
       max_after      : 1   ,$     ; Check if min is followed by a max in a win of dimension specified below ? ( 1 = Yes)
       max_aft_win    : [50/8,114/8],$;  First index: min number of compositing periods between min and max;
       mat_check      : 1 ,$
-      mat_win        : [30, 50],$;
+      mat_win        : [30/8, 50/8],$;
       lst            : 1   ,$           ; Check if min occurs in a period with LST above a given threshold ? ( 1 = Yes)
       lst_thresh     : 15,     $ ; Threshold for LST (in °C)
 
