@@ -24,10 +24,14 @@
   ;- --------------------------------------------------------- ;
   ; Set some options for test processing
   ;- --------------------------------------------------------- ;
-  test_data      = 0           ; Leads to using default input data and parameters (for testing purposes)
-  test_folder    = 'Y:\PHL_Clipped'  ; testing data folder
+  
+  debug          = 1            ; Specify if using "standard" processing for debug purposes.
+                              ; If set to 1, parallel processing is not used so that the debug is easier
+  resizeonmask   = 0
+  test_data      = 1           ; Leads to using default input data and parameters (for testing purposes)
+  test_folder    = '/home/lb/Temp/PHL_Clipped/'  ; testing data folder
   mapscape       = 1             ; Specify to use "mapscape-like" input files --> Leads to changes in NODATA values and (possibly)
-  ; generate smoothed file from MAPSCAPE data!!!
+  
   sel_seasons    = [1,1,1,1]
   doy_1q         = [0,90]        ; -> Start and end DOYs of each "season"
   doy_2q         = [91,180]
@@ -52,17 +56,11 @@
   META           = 1             ; Specify if saving input multitemporal files or just use "virtual" in-memory files
   ; referring to the input single-data - avoids creating huge "physical" input files !
 
-  force_rebuild  = 1             ; Flag. if set to 1 the input files are rebuilt (overwritten) even if already existing
+  force_rebuild  = 0             ; Flag. if set to 1 the input files are rebuilt (overwritten) even if already existing
   force_resmooth = 1             ; Flag. if set to 1 the smoothed file is rebuilt (overwritten) even if already existing
   overwrite_out  = 1             ; If = 0, then trying to overwrite existing outputs is NOT POSSIBLE
   fullout        = 1             ; Specify if also building an output file containing all bands - obsolete !
 
-  debug          = 0            ; Specify if using "standard" processing for debug purposes.
-                                 ; If set to 1, parallel processing is not used so that the debug is easier
-
-  ; TODO: substitute with automatic resize of imagery on the basis of an input shape/raster file.
-  resize         = 0
-  resize_bbox    = [538,2028,1882,2692]
 
   ;- --------------------------------------------------- ;
   ; Set general variables ------------------------------ ;
@@ -76,8 +74,8 @@
 
   ; Folders where MODIStsp stores the different parameters - do not touch !
 
-  folder_suffixes_or = ['VI_16Days_250m','VI_16Days_250m','VI_16Days_250m','VI_16Days_250m', $
-    'VI_16Days_250m','VI_16Days_250m','Surf_Temp_8Days_1Km']
+  folder_suffixes_or = ['VI_16Days_250m_v5','VI_16Days_250m_v5','VI_16Days_250m_v5','VI_16Days_250m_v5', $
+    'VI_16Days_250m_v5','VI_16Days_250m_v5','Surf_Temp_8Days_1Km_v5']
 
   ; Nodata values used in MODIStsp for the different parameters
 
@@ -122,8 +120,6 @@
       proc_year      : 0000, $       ; processing years
       ovr            : overwrite_out, $  ; flag: if 1, outputs are overwritten if existing
       mapscape       : mapscape, $    ; flag: if 1, try using mapscape smoothed array
-      resize         : resize, $      ; dummy for now - to be used to allow processing of subsets
-      resize_bbox    : resize_bbox, $
       force_resmooth : force_resmooth, $ ; flag - if 1, smoothing is redone even if file existing
       debug          : debug, $       ; flag - if 1, don't use parallel processing to allow debug
       fullout        : fullout, $     ; flag - if 1, build also an output file with all bands
@@ -153,13 +149,13 @@
       max_after      : 1   ,$     ; Check if min is followed by a max in a win of dimension specified below ? ( 1 = Yes)
       max_aft_win    : [50/8,114/8],$;  First index: min number of compositing periods between min and max;
       mat_check      : 1 ,$
-      mat_win        : [25/8,50/8],$;
+      mat_win        : [30/8, 50/8],$;
       lst            : 1   ,$           ; Check if min occurs in a period with LST above a given threshold ? ( 1 = Yes)
       lst_thresh     : 15,     $ ; Threshold for LST (in °C)
 
       ; criteria for vi shape checks
       shp_check      : shp_check, $
-      check_shape_meth: "hyperbolic", $
+      check_shape_meth: "hypertan", $
       check_R2       : check_R2, $
 
       ;---- Selected outputs
@@ -172,10 +168,11 @@
       maxvi          : 0, $   ; EVI at maximum
       minvi          : 0, $   ; EVI at minimum
       maxmin         : 1, $   ; Length of vegetative season
-      eosmin         : 1,  $   ; Length of season (EOS to SOS)
+      eosmin         : 1,  $  ; Length of season (EOS to SOS)
       meta           : META, $
       force_rebuild  : force_rebuild, $
-      ncpus          : ncpus $
+      ncpus          : ncpus, $
+      resizeonmask   : resizeonmask $
 
     }
 
@@ -187,7 +184,7 @@
 
     ; TODO: Create a IDL Widget GUI
     R_GUI_function_path = programrootdir()+'Accessoires'+path_sep()+'Phenorice_GUI.R'
-    launch_string = 'Rscript.exe'+' '+ '"'+R_GUI_function_path +'"'+' "'+file_dirname(R_GUI_function_path)+ '"'
+    launch_string = 'Rscript'+' '+ '"'+R_GUI_function_path +'"'+' "'+file_dirname(R_GUI_function_path)+ '"'
     spawn,launch_string, choice
     ;out_folder = strmid(out_folder, 5,(strlen(out_folder)-6))    ; Get the out_folder from the GUI
     print, choice
@@ -283,7 +280,7 @@
 
     ; set-up processing options using data retrieved from GUI
     
-    if (fix(in_opts_arr[52]) EQ 1) then check_shape_meth = "hyperbolic" else check_shape_meth = "linear"
+    if (fix(in_opts_arr[52]) EQ 1) then check_shape_meth = "hypertan" else check_shape_meth = "linear"
 
     opts = { $
 
@@ -303,8 +300,6 @@
       proc_year       : 0000, $
       ovr             : overwrite_out, $
       mapscape        : mapscape, $
-      resize          : resize, $
-      resize_bbox     : resize_bbox, $
       force_resmooth  : force_resmooth, $
       debug           : debug, $
       fullout         : fullout, $
@@ -358,9 +353,9 @@
       eosmin         : 1,  $   ; Length of season (EOS to SOS)
       meta           : META, $
       force_rebuild  : force_rebuild, $
-      ncpus          : ncpus $
-
-    }
+      ncpus          : ncpus, $
+      resizeonmask   : 1  $
+  }
 
 
   ENDELSE ; END else on use of test data
@@ -394,7 +389,7 @@
 
     IF (test_data EQ 1) THEN BEGIN
       ; Out file name if TEST_DATA
-      out_filename = path_create([test_folder,'Output',(string(proc_year)).trim(),'Phenorice_out_'])
+      out_filename = path_create([test_folder,'Output_new',(string(proc_year)).trim(),'Phenorice_out_'])
 ;      out_filename = path_create(["/home/lb/Temp/buttami/tests_phrice",(string(proc_year)).trim(),'Phenorice_out_'])
 ;      out_filename = "/home/lb/Temp/prova3/provaout"
       file_mkdir,file_dirname(out_filename)
@@ -415,7 +410,7 @@
       out_filename : out_filename}
 
     in_files = pr_build_inputs_v30(or_ts_folder, in_ts_folder, in_bands_or, in_bands_derived, out_filename, $
-      folder_suffixes_or, opts, nodatas_or, META, out_files_list, out_rast_list, force_rebuild)
+      folder_suffixes_or, opts, nodatas_or, META, out_files_list, out_rast_list, force_rebuild, opts.resizeonmask)
 
      pr_build_log_v30, opts , out_filename, in_files
 

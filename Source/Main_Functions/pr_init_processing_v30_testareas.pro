@@ -108,7 +108,7 @@ FUNCTION pr_init_processing_v30_testareas, in_files, opts, out_rast_list, ind_ye
     (opts.max + opts.sow + opts.hh + opts.eos + $
     opts.int + opts.maxvi + opts.minvi + opts.maxmin + opts.eosmin)
 
-  out_filename = in_files.out_filename+'_fullout.dat'
+  out_filename = in_files.out_filename 
 
   ; Delete or rename outfilename if already existing !
   IF opts.ovr EQ 1 AND file_test (out_filename) EQ 1 THEN BEGIN
