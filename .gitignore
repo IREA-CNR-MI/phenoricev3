@@ -14,8 +14,12 @@ test_data/home/lb/Desktop/PHL_Clipped/Outputs/2013/
 test_data/PHL_Clipped/Outputs/2012/*
 test_data/PHL_Clipped/Outputs/2013/
 Source/Accessoires/Options_file.RData
+Source/Accessoires/Options_file.txt
 newproject.sav
-
+phenorice.sav
+phenoricev3.sav
+test*
+/Source/.settings/**
 
 ./.git/objects/c2/548a6cc840f311a9dcdd0bf3bf9e9d7c814ea2
 ./.git/objects/c2/548a6cc840f311a9dcdd0bf3bf9e9d7c814ea2
