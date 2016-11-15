@@ -25,12 +25,12 @@
   ; Set some options for test processing
   ;- --------------------------------------------------------- ;
   
-  debug          = 1            ; Specify if using "standard" processing for debug purposes.
+  debug          = 0            ; Specify if using "standard" processing for debug purposes.
                               ; If set to 1, parallel processing is not used so that the debug is easier
-  resizeonmask   = 0
-  test_data      = 1           ; Leads to using default input data and parameters (for testing purposes)
+  resizeonmask   = 1
+  test_data      = 0         ; Leads to using default input data and parameters (for testing purposes)
   test_folder    = '/home/lb/Temp/PHL_Clipped/'  ; testing data folder
-  mapscape       = 1             ; Specify to use "mapscape-like" input files --> Leads to changes in NODATA values and (possibly)
+  mapscape       = 0             ; Specify to use "mapscape-like" input files --> Leads to changes in NODATA values and (possibly)
   
   sel_seasons    = [1,1,1,1]
   doy_1q         = [0,90]        ; -> Start and end DOYs of each "season"
@@ -50,7 +50,7 @@
 
   ncpus          = !CPU.hw_ncpu - 1 ; Find number of available cores - KEEP ONE FREE TO AVOID OVERLOAD !!!!!
   method         = 'parallel-line'; Processing method *"parallel-line" (faster - difficult to debug ! ))
-  chunksize      = 50             ; Number of lines to assign to each core: the higher, the fastest, but the
+  chunksize      = 200             ; Number of lines to assign to each core: the higher, the fastest, but the
   ; highest also the memory load !
 
   META           = 1             ; Specify if saving input multitemporal files or just use "virtual" in-memory files
@@ -61,10 +61,9 @@
   overwrite_out  = 1             ; If = 0, then trying to overwrite existing outputs is NOT POSSIBLE
   fullout        = 1             ; Specify if also building an output file containing all bands - obsolete !
 
-
   ;- --------------------------------------------------- ;
   ; Set general variables ------------------------------ ;
-  ;- --------------------------------------------------- ;
+  ;- --------------------------------------------------- 
 
   ; Codenames of the input bands (inherited from MODIStsp R package (https://github.com/lbusett/MODIStsp)
   ; Used in the phase of building the "short" time series using pr_build_inputs
@@ -220,7 +219,7 @@
 
     in_lc_file = in_opts_arr[3]         ; Name of the input "land cover masking" file. Only pixels at "1" in this file are processed
 
-    out_filename = in_opts_arr[2]   ; Out file name (Actually, a prefixc to which indication about processing year is appended
+    out_mainfolder = in_opts_arr[2]   ; Out file name (Actually, a prefixc to which indication about processing year is appended
 
     start_year = fix(in_opts_arr[33])     &         end_year = fix(in_opts_arr[34])   ; Start and end year for the analysis
 
@@ -369,7 +368,7 @@
   ;-  Start Cycling on years
   ;- --------------------------------------------------------- ;
   ind_year = 0
-
+  
   FOR proc_year = end_year, start_year, -1 DO BEGIN
 
 
@@ -395,7 +394,7 @@
       file_mkdir,file_dirname(out_filename)
 
     ENDIF ELSE BEGIN
-      out_filename = path_create([out_filename,(string(proc_year)).trim(),'Phenorice_out_'])
+      out_filename = path_create([out_mainfolder,(string(proc_year)).trim(),'Phenorice_out_'])
     ENDELSE
 
     ; Initialize structure of file names and of metaraster files (used if "META")
