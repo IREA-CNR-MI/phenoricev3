@@ -213,8 +213,7 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
       FOREACH file, in_files_required, file_ind  DO BEGIN
 
         date = yeardoys_required[file_ind]
-        time = envitime(ACQUISITION = doy2date(fix(strmid(strtrim(date, 2), 5, 3)), $
-          fix(strmid(strtrim(date, 2), 0, 4)))+"T00:00:00Z")
+        time = envitime(ACQUISITION = doy2date(fix(strmid(strtrim(date, 2), 5, 3)), fix(strmid(strtrim(date, 2), 0, 4)))+"T00:00:00Z")
         times[file_ind] = time.acquisition
 
         IF file_ind EQ 0 THEN BEGIN

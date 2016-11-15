@@ -217,7 +217,7 @@ lgt_check = gradio(items = c('On','Off'), text = 'Select', container=lgt_group, 
 
 maxeos_group <- ggroup(horizontal = TRUE, container=criteria_group)  				# Main group
 maxeos_lab <- glabel(text = 'Maturity to Harvest Length - Min: ', justify = "right" , container=maxeos_group, width = 8)
-maxeoslow_wid <- gspinbutton(from = 25, to = 50, by = 8, container=maxeos_group,horizontal =F, width = 30, value = general_opts$maxeoslow )
+maxeoslow_wid <- gspinbutton(from = 25, to = 90, by = 8, container=maxeos_group,horizontal =F, width = 30, value = general_opts$maxeoslow )
 maxeos_lab <- glabel(text = ' Max: ', justify = "right" , container=maxeos_group, width = 8)
 maxeosup_wid <- gspinbutton(from = 25, to = 50, by = 8, container=maxeos_group,horizontal =F, width = 30 , value = general_opts$maxeosup )
 vi_decr_lab <- glabel(text = '% of decrease to EOS :', justify = "right" , container=maxeos_group, maxeos_group = 8)
