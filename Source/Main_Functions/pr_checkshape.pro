@@ -79,8 +79,8 @@ function pr_checkshape, opts, smooth_pix, out_mindoy, out_maxdoy, out_eosdoy, do
 
       ; Set the first guess and errors
       u = 0.02
-      v = 0.01
-      start =  [min_EVI,range_EVI, u, v ,doys_reg[pos_min] + 10, doys_reg[pos_max] + 10  ]  ; Initialize Firt Guesss
+      v = 0.02
+      start =  [min_EVI,range_EVI, u, v , doys_reg[pos_min] + 30, doys_reg[pos_max] + 30]  ; Initialize Firt Guesss
       rerr = fltarr(n_elements(doy_sub))+1000
       
       ; Set the constraints
@@ -88,16 +88,18 @@ function pr_checkshape, opts, smooth_pix, out_mindoy, out_maxdoy, out_eosdoy, do
                              limits:[0.D,0]}, 6)
       parinfo[0].fixed = 1
       parinfo[1].fixed = 0
+      parinfo[2:3].limited = [1,0]
+      parinfo[2:3].limits [0]= 0.01
       parinfo[*].value = start
       
       ; Try to fit the function
       
       ;result  = MPFITEXPR(expr, doy_sub, smooth_sub, rerr, start, parinfo = parinfo, STATUS = STATUS, YFIT=YFIT)
-      result = MPFITEXPR(expr, doy_sub, smooth_sub, rerr, start, parinfo = parinfo, STATUS = STATUS, YFIT=YFIT, ftol = 0.1, /quiet)
+      result = MPFITEXPR(expr, doy_sub, smooth_sub, rerr, start, parinfo = parinfo, STATUS = STATUS, YFIT=YFIT, ftol = 0.1)
       
       if check EQ 1 then begin
         plot, doy_sub, smooth_sub                                      ; Plot data
-        oplot, doy_sub, mpevalexpr(expr, doy_sub, result2), color = 220                ; Plot model
+        oplot, doy_sub, mpevalexpr(expr, doy_sub, result), color = 220                ; Plot model
         oplot, doy_sub, smooth_pix [pos_min:pos_eos], color = 150                ; Plot model
         R = GET_KBRD()
       endif
