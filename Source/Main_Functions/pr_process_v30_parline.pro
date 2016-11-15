@@ -31,7 +31,7 @@
 ;    out_matrix       : intarr  Output matrix (nb_out, nc, nl) (nb + nb_out, nc, nl if smoothing performed)
 ;
 ; :Author:
-; 	Lorenzo Busetto, phD - email: busetto.l@irea.cnr.it (2016)
+;   Lorenzo Busetto, phD - email: busetto.l@irea.cnr.it (2016)
 ;
 ; :License: GPL>3.0
 ;-
@@ -67,21 +67,21 @@ FUNCTION pr_process_v30_parline, opts, lines, data_lc, data_VI, data_QA, data_DO
   ENDIF
 
   IF (max(years) GT opts.proc_year) THEN BEGIN    ; If some bands of next year required, compute their doy by adding 365
-    
+
     IF opts.meta THEN data_doy [*,*,where(years EQ opts.proc_year +1)] = data_DOY [*,*,where(years EQ opts.proc_year +1)] + 365 $
-      ELSE data_doy [where(years EQ opts.proc_year +1),*, *] = data_DOY [where(years EQ opts.proc_year +1),*, *] + 365
-    
+    ELSE data_doy [where(years EQ opts.proc_year +1),*, *] = data_DOY [where(years EQ opts.proc_year +1),*, *] + 365
+
   ENDIF
 
   IF smooth_flag EQ 0 THEN BEGIN
-    if opts.mapscape EQ 0 then dove_vi_na  = where(data_vi EQ 32767, count_na) $
-      else dove_vi_na  = where(data_vi EQ -3000, count_na)
+    IF opts.mapscape EQ 0 THEN dove_vi_na  = where(data_vi EQ 32767, count_na) $
+    ELSE dove_vi_na  = where(data_vi EQ -3000, count_na)
     data_errors = 200 * (data_QA EQ 0) + 1100 * (data_QA EQ 1) + 3000* (data_QA EQ 2)
     IF (count_na NE 0 ) THEN data_errors [dove_vi_na] = 7000
     data_errors = 1.0/data_errors
   ENDIF
-  
-  
+
+
   ;- ------------------------------------------------------------------
   ; Cycle on the lines of the "data chunk" and run the smoothing
   ; on each of its pixels
@@ -114,9 +114,9 @@ FUNCTION pr_process_v30_parline, opts, lines, data_lc, data_VI, data_QA, data_DO
           IF opts.META THEN lst_pix  = reform(data_lst [pixel,line,*])  ELSE lst_pix  = data_lst  [*,pixel,line]
           IF opts.META THEN NDFI_pix = reform(data_NDFI [pixel,line,*]) ELSE NDFI_pix = data_NDFI [*,pixel,line]
 
-        ; -------------------------------------------------
-        ; ------ Initial checks on consistency of DOYs ----
-        ; -------------------------------------------------
+          ; -------------------------------------------------
+          ; ------ Initial checks on consistency of DOYs ----
+          ; -------------------------------------------------
 
           ; Check on doys: doys > 400 = NODATA in DOY image --> set them to the doy of the composite
           IF opts.mapscape NE 1000 THEN BEGIN
@@ -143,16 +143,16 @@ FUNCTION pr_process_v30_parline, opts, lines, data_lc, data_VI, data_QA, data_DO
             stop
           ENDIF
 
-        ; -----------------------------------------------------------------------
-        ; ------ launch the smoothing (or just get data from available file) ----
-        ; -----------------------------------------------------------------------
+          ; -----------------------------------------------------------------------
+          ; ------ launch the smoothing (or just get data from available file) ----
+          ; -----------------------------------------------------------------------
 
           IF (smooth_flag EQ 1) THEN BEGIN
 
             IF opts.META THEN smooth_pix = smooth_matrix[pixel, line, *] ELSE smooth_pix = smooth_matrix[*, pixel, line]   ; get data from smoothed file
-          
+
           ENDIF ELSE BEGIN ; otherwise, perform smoothing
-           
+
             ; prepare data
             IF opts.META THEN qa_pix  = data_QA [pixel, line, *]     ELSE qa_pix  = data_QA [*,pixel, line]
             IF opts.META THEN err_pix = data_errors [pixel, line, *] ELSE err_pix = data_errors [*,pixel,line]
@@ -164,16 +164,16 @@ FUNCTION pr_process_v30_parline, opts, lines, data_lc, data_VI, data_QA, data_DO
 
           ENDELSE
 
-      ; -----------------------------------------------------------------------
-      ; -------  Now launch the pheno processing on smooth_pix            -----
-      ; -----------------------------------------------------------------------
-
+          ; -----------------------------------------------------------------------
+          ; -------  Now launch the pheno processing on smooth_pix            -----
+          ; -----------------------------------------------------------------------
+          ;if (pixel EQ 870) and (Line EQ 12) then stop
           out_data = pr_process_pix_v30(opts, smooth_pix, NDFI_pix, lst_pix, doy_pix, nb, doys_reg)
 
-      ; -----------------------------------------------------------------------
-      ; --- build the output matrix according to user choices aboout outputs --
-      ; --- of interest                                                   -----
-      ; -----------------------------------------------------------------------
+          ; -----------------------------------------------------------------------
+          ; --- build the output matrix according to user choices aboout outputs --
+          ; --- of interest                                                   -----
+          ; -----------------------------------------------------------------------
 
           IF opts.META THEN out_matrix[pixel, line, 0] = out_data.(0) ELSE out_matrix[0, pixel, line] = out_data.(0)   ; get n_rice_seasons data
 
@@ -207,7 +207,7 @@ FUNCTION pr_process_v30_parline, opts, lines, data_lc, data_VI, data_QA, data_DO
   ENDIF
 
   ; send back result to the calling routine
-  
+
   return, out_matrix
 
 END

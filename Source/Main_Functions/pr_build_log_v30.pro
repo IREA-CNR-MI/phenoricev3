@@ -32,12 +32,12 @@ PRO pr_build_log_v30,  opts , out_filename, in_files
   printf, u_log, "------------------------------"
   printf, u_log, "INPUT PARAMETERS              "
   printf, u_log, "------------------------------"
-  printf, u_log, "-> Processed Quarters: ", strtrim(string(proc_opts.SEL_SEASONS[0]),2) + "-" + strtrim(string(proc_opts.SEL_SEASONS[1]),2) $
-    + "-" + strtrim(string(proc_opts.SEL_SEASONS[2]),2) + "-" + strtrim(string(proc_opts.SEL_SEASONS[3]),2)
-  printf, u_log, "-> Start/End of 1st quarter: ", strtrim(proc_opts.doy_1q[0],2) + " / " + strtrim(proc_opts.doy_1q[1],2)
-  printf, u_log, "-> Start/End of 2nd quarter: ", strtrim(proc_opts.doy_2q[0],2) + " / " + strtrim(proc_opts.doy_2q[1],2)
-  printf, u_log, "-> Start/End of 3rd quarter: ", strtrim(proc_opts.doy_3q[0],2) + " / " + strtrim(proc_opts.doy_3q[1],2)
-  printf, u_log, "-> Start/End of 4th quarter: ", strtrim(proc_opts.doy_4q[0],2) + " / " + strtrim(proc_opts.doy_4q[1],2)
+  printf, u_log, "-> Processed Quarters: ", strtrim(string(opts.SEL_SEASONS[0]),2) + "-" + strtrim(string(opts.SEL_SEASONS[1]),2) $
+    + "-" + strtrim(string(opts.SEL_SEASONS[2]),2) + "-" + strtrim(string(opts.SEL_SEASONS[3]),2)
+  printf, u_log, "-> Start/End of 1st quarter: ", strtrim(opts.doy_1q[0],2) + " / " + strtrim(opts.doy_1q[1],2)
+  printf, u_log, "-> Start/End of 2nd quarter: ", strtrim(opts.doy_2q[0],2) + " / " + strtrim(opts.doy_2q[1],2)
+  printf, u_log, "-> Start/End of 3rd quarter: ", strtrim(opts.doy_3q[0],2) + " / " + strtrim(opts.doy_3q[1],2)
+  printf, u_log, "-> Start/End of 4th quarter: ", strtrim(opts.doy_4q[0],2) + " / " + strtrim(opts.doy_4q[1],2)
   printf, u_log, ""
   IF (opts.derivs EQ 1) THEN BEGIN
     printf, u_log, "-> Derivatives checks on maxs", $
@@ -53,9 +53,9 @@ PRO pr_build_log_v30,  opts , out_filename, in_files
     printf, u_log, "-> NO check on Maximum absolute Value"
   ENDELSE
 
-  IF (opts.decrease EQ 1) THEN BEGIN
-    printf, u_log, "-> Width and % for decrease check on senescence", $
-      strtrim(opts.decrease_win)*8, ' - ',strtrim(opts.decrease_perc)
+  IF (opts.MAT_CHECK EQ 1) THEN BEGIN
+    printf, u_log, "-> 'max to eos' length  and % for decrease check on eos", $
+      strtrim(opts.MAT_WIN[0])*8 - strtrim(opts.MAT_WIN[1])*8, ' - ',strtrim(opts.decrease_perc)
   ENDIF ELSE BEGIN
     printf, u_log, "-> NO check on decrease in senescence"
   ENDELSE

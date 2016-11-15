@@ -24,21 +24,25 @@
   ;- --------------------------------------------------------- ;
   ; Set some options for test processing
   ;- --------------------------------------------------------- ;
-  test_data      = 0             ; Leads to using default input data and parameters (for testing purposes)
-  test_folder    = '/home/lb/Desktop/PHL_Clipped/'  ; testing data folder
+  
+  debug          = 1            ; Specify if using "standard" processing for debug purposes.
+                              ; If set to 1, parallel processing is not used so that the debug is easier
+  resizeonmask   = 0
+  test_data      = 1           ; Leads to using default input data and parameters (for testing purposes)
+  test_folder    = '/home/lb/Temp/PHL_Clipped/'  ; testing data folder
   mapscape       = 1             ; Specify to use "mapscape-like" input files --> Leads to changes in NODATA values and (possibly)
-  ; generate smoothed file from MAPSCAPE data!!!
+  
   sel_seasons    = [1,1,1,1]
   doy_1q         = [0,90]        ; -> Start and end DOYs of each "season"
   doy_2q         = [91,180]
   doy_3q         = [181,270]
   doy_4q         = [271,365]
 
-  start_year     = 2012          ; Start and end year for the test run
+  start_year     = 2013          ; Start and end year for the test run
   end_year       = 2013
 
-  shp_check      = 0
-  check_corr     = 0.95
+  shp_check      = 1
+  check_R2       = 0.95
 
   ;- --------------------------------------------------------- ;
   ; Set General processing options: number of cpus, overwriting, reporocessing ,etc.
@@ -52,18 +56,11 @@
   META           = 1             ; Specify if saving input multitemporal files or just use "virtual" in-memory files
   ; referring to the input single-data - avoids creating huge "physical" input files !
 
-  force_rebuild  = 1             ; Flag. if set to 1 the input files are rebuilt (overwritten) even if already existing
+  force_rebuild  = 0             ; Flag. if set to 1 the input files are rebuilt (overwritten) even if already existing
   force_resmooth = 1             ; Flag. if set to 1 the smoothed file is rebuilt (overwritten) even if already existing
   overwrite_out  = 1             ; If = 0, then trying to overwrite existing outputs is NOT POSSIBLE
   fullout        = 1             ; Specify if also building an output file containing all bands - obsolete !
 
-  debug          = 0             ; Specify if using "standard" processing for debug purposes.
-  ; If set to 1, parallel processing is not used so that the debug is easier
-
-
-  ; TODO: substitute with automatic resize of imagery on the basis of an input shape/raster file.
-  resize         = 0
-  resize_bbox    = [538,2028,1882,2692]
 
   ;- --------------------------------------------------- ;
   ; Set general variables ------------------------------ ;
@@ -77,8 +74,8 @@
 
   ; Folders where MODIStsp stores the different parameters - do not touch !
 
-  folder_suffixes_or = ['VI_16Days_250m','VI_16Days_250m','VI_16Days_250m','VI_16Days_250m', $
-    'VI_16Days_250m','VI_16Days_250m','Surf_Temp_8Days_1Km']
+  folder_suffixes_or = ['VI_16Days_250m_v5','VI_16Days_250m_v5','VI_16Days_250m_v5','VI_16Days_250m_v5', $
+    'VI_16Days_250m_v5','VI_16Days_250m_v5','Surf_Temp_8Days_1Km_v5']
 
   ; Nodata values used in MODIStsp for the different parameters
 
@@ -103,10 +100,6 @@
 
     ; Name of the input "land cover masking" file. Only pixels at "1" in this file are processed
     in_lc_file = path_create([test_folder,'Ancillary', 'Land_Cover', 'Mask.dat'])
-    
-    ; Out file name (Actually, a prefixc to which indication about processing year is appended
-    out_filename = path_create([test_folder,'Outputs',(string(proc_year)).trim(),'Phenorice_out_'])
-    file_mkdir,file_dirname(out_filename)
 
     start_year = start_year     &         end_year = end_year   ; Start and end year for the analysis
 
@@ -127,8 +120,6 @@
       proc_year      : 0000, $       ; processing years
       ovr            : overwrite_out, $  ; flag: if 1, outputs are overwritten if existing
       mapscape       : mapscape, $    ; flag: if 1, try using mapscape smoothed array
-      resize         : resize, $      ; dummy for now - to be used to allow processing of subsets
-      resize_bbox    : resize_bbox, $
       force_resmooth : force_resmooth, $ ; flag - if 1, smoothing is redone even if file existing
       debug          : debug, $       ; flag - if 1, don't use parallel processing to allow debug
       fullout        : fullout, $     ; flag - if 1, build also an output file with all bands
@@ -144,8 +135,8 @@
       derivs_opt     : [5,3],$   ; Check for at least 3 derivs on 5 on both sides
       max_value      : 1 ,$      ; Check if max above threshold ? ( 1 = Yes)
       vi_tr_max      : 4000 ,$   ; Threshold for max - if max below this value, it is discarded
-      decrease       : 1      ,$ ; Check if max decreases below a threshold on a window on th right side ? ( 1 = Yes)
-      decrease_win   : 16  ,$     ; Dimension of the decrease window (as number of 8 days periods)
+      ;decrease       : 1      ,$ ; Check if max decreases below a threshold on a window on th right side ? ( 1 = Yes)
+      ;decrease_win   : 10  ,$     ; Dimension of the decrease window (as number of 8 days periods)
       decrease_perc  : 0.50, $   ; Percentage decrease to be checked
       ;---- Criteria for minimum detection
       min_value      : 1, $      ; Check if min below threshold ? ( 1 = Yes)
@@ -157,13 +148,15 @@
       check_ndfi     : 1 , $     ; Do the check on NDFI ? (default to 1)
       max_after      : 1   ,$     ; Check if min is followed by a max in a win of dimension specified below ? ( 1 = Yes)
       max_aft_win    : [50/8,114/8],$;  First index: min number of compositing periods between min and max;
+      mat_check      : 1 ,$
+      mat_win        : [30/8, 50/8],$;
       lst            : 1   ,$           ; Check if min occurs in a period with LST above a given threshold ? ( 1 = Yes)
       lst_thresh     : 15,     $ ; Threshold for LST (in °C)
 
       ; criteria for vi shape checks
       shp_check      : shp_check, $
-      check_shape_meth: "linear", $
-      check_corr     : check_corr, $
+      check_shape_meth: "hypertan", $
+      check_R2       : check_R2, $
 
       ;---- Selected outputs
       n_rice         : 1, $   ; Number of rice seasons
@@ -175,10 +168,11 @@
       maxvi          : 0, $   ; EVI at maximum
       minvi          : 0, $   ; EVI at minimum
       maxmin         : 1, $   ; Length of vegetative season
-      eosmin         : 1,  $   ; Length of season (EOS to SOS)
+      eosmin         : 1,  $  ; Length of season (EOS to SOS)
       meta           : META, $
       force_rebuild  : force_rebuild, $
-      ncpus          : ncpus $
+      ncpus          : ncpus, $
+      resizeonmask   : resizeonmask $
 
     }
 
@@ -191,18 +185,21 @@
     ; TODO: Create a IDL Widget GUI
     R_GUI_function_path = programrootdir()+'Accessoires'+path_sep()+'Phenorice_GUI.R'
     launch_string = 'Rscript'+' '+ '"'+R_GUI_function_path +'"'+' "'+file_dirname(R_GUI_function_path)+ '"'
-    spawn,launch_string, out_folder
-    out_folder = strmid(out_folder, 5,(strlen(out_folder)-6))    ; Get the out_folder from the GUI
-
+    spawn,launch_string, choice
+    ;out_folder = strmid(out_folder, 5,(strlen(out_folder)-6))    ; Get the out_folder from the GUI
+    print, choice
+    
     ;- --------------------------------------------------------------- ;
     ; Read the input options from the txt file saved by Phenorice_GUI (TO be removed after switching to IDL GUI
     ;- --------------------------------------------------------------- ;
-
-    IF out_folder EQ '' OR out_folder EQ 'ALS'THEN BEGIN
+    check_lgt = n_elements(choice)
+    
+    if choice[check_lgt-1] EQ '[1] "Quit"' THEN BEGIN
       print, 'User selected to quit'
       stop
     ENDIF
-    options_file = out_folder+'/phenorice_options.txt'
+    
+    options_file =  programrootdir()+'Accessoires'+path_sep()+'Options_file.txt'
     in_file = options_file
     in_opts_arr = ''
     line = ''
@@ -257,9 +254,9 @@
 
     ; Check for overlapping between ranges
 
-    Inters_1_2 = cgSetIntersection(range_seas_1, range_seas_2)
-    Inters_2_3 = cgSetIntersection(range_seas_2, range_seas_3)
-    Inters_3_4 = cgSetIntersection(range_seas_3, range_seas_4)
+    Inters_1_2 = cgsetintersection(range_seas_1, range_seas_2)
+    Inters_2_3 = cgsetintersection(range_seas_2, range_seas_3)
+    Inters_3_4 = cgsetintersection(range_seas_3, range_seas_4)
 
     IF (min([Inters_1_2,Inters_2_3,Inters_3_4]) NE -999) OR (max([Inters_1_2,Inters_2_3,Inters_3_4]) NE -999) THEN BEGIN
       mes =dialog_message('Selected periods are overlapping - please correct')
@@ -270,9 +267,9 @@
 
     IF (stard_doy_seas1 LT 0) THEN BEGIN
       range_seas1_cor = 365+range_seas_1
-      IF (total(sel_seasons[0:1]) EQ 2)           THEN Inters_1_2_cor = cgSetIntersection(range_seas1_cor, range_seas_2)  ELSE inters_1_2_cor = -999
-      IF ((sel_seasons [0] + sel_seasons[2] )EQ 2) THEN Inters_1_3_cor = cgSetIntersection(range_seas1_cor, range_seas_3) ELSE inters_1_3_cor = -999
-      IF ((sel_seasons [0] + sel_seasons[3] )EQ 2) THEN Inters_1_4_cor = cgSetIntersection(range_seas1_cor, range_seas_4) ELSE inters_1_4_cor = -999
+      IF (total(sel_seasons[0:1]) EQ 2)           THEN Inters_1_2_cor = cgsetintersection(range_seas1_cor, range_seas_2)  ELSE inters_1_2_cor = -999
+      IF ((sel_seasons [0] + sel_seasons[2] )EQ 2) THEN Inters_1_3_cor = cgsetintersection(range_seas1_cor, range_seas_3) ELSE inters_1_3_cor = -999
+      IF ((sel_seasons [0] + sel_seasons[3] )EQ 2) THEN Inters_1_4_cor = cgsetintersection(range_seas1_cor, range_seas_4) ELSE inters_1_4_cor = -999
 
       IF  (min([Inters_1_2_cor,Inters_1_3_cor,Inters_1_4_cor]) NE -999) OR (max([Inters_1_2_cor,Inters_1_3_cor,Inters_1_4_cor]) NE -999) THEN BEGIN
         mes =dialog_message('Selected periods are overlapping - Quarter One includes maxima of previous year in a period potentially included in other quarters for current year !!! Please correct !')
@@ -282,6 +279,8 @@
     ENDIF
 
     ; set-up processing options using data retrieved from GUI
+    
+    if (fix(in_opts_arr[52]) EQ 1) then check_shape_meth = "hypertan" else check_shape_meth = "linear"
 
     opts = { $
 
@@ -301,8 +300,6 @@
       proc_year       : 0000, $
       ovr             : overwrite_out, $
       mapscape        : mapscape, $
-      resize          : resize, $
-      resize_bbox     : resize_bbox, $
       force_resmooth  : force_resmooth, $
       debug           : debug, $
       fullout         : fullout, $
@@ -318,28 +315,29 @@
       derivs_opt      : [5,3],$    ; Check for at least 3 derivs on 5 on both sides
       max_value       : fix(in_opts_arr[37])  ,$ ; Check if max above threshold ? ( 1 = Yes)
       vi_tr_max       : fix(in_opts_arr[38])  ,$ ; Threshold for max - if max below this value, it is discarded
-      decrease        : fix(in_opts_arr[41])  ,$ ; Check if max decreases below a threshold on a window on th right side ? ( 1 = Yes)
-      decrease_win    : fix(in_opts_arr[40])/8,$ ; Dimension of the decrease window
       decrease_perc   : float(in_opts_arr[39]),$ ; Percentage decrease to be checked
 
       ;---- Criteria on Minimums
-      min_value       : fix(in_opts_arr[42]), $  ; Check if min below threshold ? ( 1 = Yes)
-      vi_tr_min       : fix(in_opts_arr[43]) ,$  ; max threshold for legal min (If min above this threshold it is discarded)
+      min_value       : fix(in_opts_arr[40]), $  ; Check if min below threshold ? ( 1 = Yes)
+      vi_tr_min       : fix(in_opts_arr[41]) ,$  ; max threshold for legal min (If min above this threshold it is discarded)
       growth          : 1     ,$  ; Check for positive derivatives after min ? ( 1 = Yes)
       growth_opt      : [5,3] ,$  ; First index: fimension of the window; second index: how many in the window must be postive for the min to be legit
-      flood           : fix(in_opts_arr[44]) ,$ ; Check for ocurrence of a flooding in a window of dim flood_win centered on min ? ( 1 = Yes)
-      flood_win       : fix(in_opts_arr[45]) ,$ ; dimension of win to be checked for flood (in DAYS)
+      flood           : fix(in_opts_arr[42]) ,$ ; Check for ocurrence of a flooding in a window of dim flood_win centered on min ? ( 1 = Yes)
+      flood_win       : fix(in_opts_arr[43]) ,$ ; dimension of win to be checked for flood (in DAYS)
       check_ndfi      : 1 , $     ; Do the check on NDFI ? (default to 1)
-      max_after       : fix(in_opts_arr[46]) ,$     ; Check if min is followed by a max in a win of dimension specified below ? ( 1 = Yes)
-      max_aft_win     : [fix(in_opts_arr[47])/8,fix(in_opts_arr[48])/8],$;  First index: min number of compositing periods between min and max;
-      ;  Second index: max number of compositing periods between min and max;
-      lst             : fix(in_opts_arr[49]) ,$           ; Check if min occurs in a period with LST above a given threshold ? ( 1 = Yes)
-      lst_thresh      : fix(in_opts_arr[50] ),$ ; Threshold for LST (in °C)
+      max_after       : fix(in_opts_arr[44]) ,$     ; Check if min is followed by a max in a win of dimension specified below ? ( 1 = Yes)
+      max_aft_win     : [fix(in_opts_arr[45])/8,fix(in_opts_arr[46])/8],$;  First index: min number of compositing periods between min and max;
+      mat_check       : fix(in_opts_arr[47]) ,$     ; Check if min is followed by a max in a win of dimension specified below ? ( 1 = Yes)
+      mat_win         : [fix(in_opts_arr[48])/8,fix(in_opts_arr[49])/8],$;  First index: min number of compositing periods between min and max;
       
+      ;  Second index: max number of compositing periods between min and max;
+      lst             : fix(in_opts_arr[50]) ,$           ; Check if min occurs in a period with LST above a given threshold ? ( 1 = Yes)
+      lst_thresh      : fix(in_opts_arr[51] ),$ ; Threshold for LST (in °C)
+
       ; criteria for vi shape checks
-      shp_check      : shp_check, $
-      check_shape_meth: "linear", $
-      check_corr     : check_corr, $
+      shp_check        : fix(in_opts_arr[52]), $
+      check_shape_meth : check_shape_meth, $
+      check_R2         : check_R2, $
 
       ;---- Selected outputs
 
@@ -355,9 +353,9 @@
       eosmin         : 1,  $   ; Length of season (EOS to SOS)
       meta           : META, $
       force_rebuild  : force_rebuild, $
-      ncpus          : ncpus $
-
-    }
+      ncpus          : ncpus, $
+      resizeonmask   : 1  $
+  }
 
 
   ENDELSE ; END else on use of test data
@@ -374,6 +372,8 @@
 
   FOR proc_year = end_year, start_year, -1 DO BEGIN
 
+
+   
     opts.proc_year = proc_year
     t1 = systime(2)   ; Get starting time
     print, "# ############################################ #"
@@ -385,7 +385,18 @@
     ;- --------------------------------------------------------- ;
     print, "# BUILDING INPUT MULTITEMPORAL FILES"
     print, "# ############################################ #"
-    
+
+
+    IF (test_data EQ 1) THEN BEGIN
+      ; Out file name if TEST_DATA
+      out_filename = path_create([test_folder,'Output_new',(string(proc_year)).trim(),'Phenorice_out_'])
+;      out_filename = path_create(["/home/lb/Temp/buttami/tests_phrice",(string(proc_year)).trim(),'Phenorice_out_'])
+;      out_filename = "/home/lb/Temp/prova3/provaout"
+      file_mkdir,file_dirname(out_filename)
+
+    ENDIF ELSE BEGIN
+      out_filename = path_create([out_filename,(string(proc_year)).trim(),'Phenorice_out_'])
+    ENDELSE
 
     ; Initialize structure of file names and of metaraster files (used if "META")
     out_files_list = {evi_file: "", ndfi_file:"", blue_file :"", $
@@ -399,7 +410,9 @@
       out_filename : out_filename}
 
     in_files = pr_build_inputs_v30(or_ts_folder, in_ts_folder, in_bands_or, in_bands_derived, out_filename, $
-      folder_suffixes_or, opts, nodatas_or, META, out_files_list, out_rast_list, force_rebuild)
+      folder_suffixes_or, opts, nodatas_or, META, out_files_list, out_rast_list, force_rebuild, opts.resizeonmask)
+
+     pr_build_log_v30, opts , out_filename, in_files
 
     T2=systime(1)
     print,"Time to build files: ", (string(t2-t1)).trim(), " seconds"

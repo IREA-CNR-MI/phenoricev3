@@ -1,0 +1,2 @@
+library(MODIStsp)
+MODIStsp()
