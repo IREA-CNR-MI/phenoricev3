@@ -1,6 +1,6 @@
 /home/lb/projects/ermes/datasets/rs_products/MODIS/WA/
 /home/lb/Temp/buttami/prove_senegal/output
-/home/lb/nr_working/shared/PhenoRice/Processing/Senegal/Inputs/Ancillary/Land_Cover_Mask/Resize_SNG_Mask_Temporary.dat
+/home/lb/nr_working/shared/PhenoRice/Processing/Senegal/Inputs/Ancillary/Land_Cover_Mask/LC_FAO/Lc_Mask_FAO.dat
 /home/lb/Temp/buttami/prove_senegal
 On
 1
@@ -30,8 +30,8 @@ Off
 12
 274
 365
-2014
-2014
+2013
+2013
 On
 5500
 On
