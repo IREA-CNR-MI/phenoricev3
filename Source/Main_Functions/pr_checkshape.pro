@@ -95,7 +95,7 @@ function pr_checkshape, opts, smooth_pix, out_mindoy, out_maxdoy, out_eosdoy, do
       ; Try to fit the function
       
       ;result  = MPFITEXPR(expr, doy_sub, smooth_sub, rerr, start, parinfo = parinfo, STATUS = STATUS, YFIT=YFIT)
-      result = MPFITEXPR(expr, doy_sub, smooth_sub, rerr, start, parinfo = parinfo, STATUS = STATUS, YFIT=YFIT, ftol = 0.1)
+      result = MPFITEXPR(expr, doy_sub, smooth_sub, rerr, start, parinfo = parinfo, STATUS = STATUS, YFIT=YFIT, ftol = 0.1, /Quiet)
       
       if check EQ 1 then begin
         plot, doy_sub, smooth_sub                                      ; Plot data
