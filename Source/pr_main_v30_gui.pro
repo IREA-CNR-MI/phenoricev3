@@ -354,7 +354,7 @@
       meta           : META, $
       force_rebuild  : force_rebuild, $
       ncpus          : ncpus, $
-      resizeonmask   : 1  $
+      resizeonmask   : resizeonmask  $
   }
 
 
