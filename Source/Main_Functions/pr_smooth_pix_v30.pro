@@ -36,12 +36,13 @@ FUNCTION pr_smooth_pix_v30, opts, vi_pix, qa_pix, doy_pix, nb, doys_reg,$
 
   doys_ord    = sort(doy_pix)
   vi_pix_ord  = float(vi_pix[doys_ord])
-  vi_pix_ord[where(vi_pix_ord EQ 32767)] = !values.F_NaN
-  vi_pix_ord[where(vi_pix_ord EQ -3000)] = !values.F_NaN
-  doy_pix_ord = doy_pix[doys_ord]
+  ;vi_pix_ord[where(vi_pix_ord EQ 32767)] = !values.F_NaN
+  wherena = where(vi_pix_ord EQ -3000, count )
+  if (count NE 0 ) then vi_pix_ord[wherena] = !values.F_NaN
+  doy_pix_ord = long(doy_pix[doys_ord])
   qa_pix_ord  = qa_pix[doys_ord]
   vi_pix_fl   = vi_pix_ord
-  
+
   ;  ; 1) SPIKE DETECTION AND GAP FILLING
   
   FOR K = opts.win_dim_l, nb-(opts.win_dim_r+1) DO BEGIN
@@ -49,19 +50,14 @@ FUNCTION pr_smooth_pix_v30, opts, vi_pix, qa_pix, doy_pix, nb, doys_reg,$
     check_arr4     = vi_pix_ord[[k-2, k-1, k+1,k+2]]
     check_arr6     = vi_pix_ord[[k-3,k-2, k-1, k+1,k+2,k+3]]
     wgt            = err_pix[[k-3,k-2, k-1, k+1,k+2,k+3]]
-    MED_VAL        = mean(CHECK_ARR4, /NaN)
-    STDEV_val      = STDDEV(CHECK_ARR4, /NAN)
-
+    a = MOMENT(CHECK_ARR4, mean = MED_VAL , sdev = STDEV_val, maxmoment = 1, /NAN)
     IF (vi_pix_ord[k] LT MED_VAL-2*STDEV_val) OR (vi_pix_ord[k] GT MED_VAL+2*STDEV_val) OR (finite(vi_pix_ord[k]) EQ 0) THEN BEGIN
-
       ; OPTION 1 GAP FILLING:  SECOND ORDER POLINOMIAL
       ;result       = poly_fit(x_vect, CHECK_ARR6, 2, MEASURE_ERRORS=measure_errors, Yfit = Yfit,/DOUBLE,status=status)
       result = polyfitfast(x_vect[where(finite(CHECK_ARR6) EQ 1)], CHECK_ARR6[where(finite(CHECK_ARR6) EQ 1)], 2, w = wgt)
       err_pix[k]   = 3000
       vi_pix_fl[k] = result[0] + result[1]*4 + result[2]*16
-
     ENDIF
-
   ENDFOR
 
   ; 1) SAVGOL - first iteration - use weights derived from quality flags
@@ -75,7 +71,7 @@ FUNCTION pr_smooth_pix_v30, opts, vi_pix, qa_pix, doy_pix, nb, doys_reg,$
       Y              = vi_pix_fl[smooth_indexes]
       X              = doy_pix_ord[smooth_indexes]
       result = polyfitfast(X[where(finite(Y) EQ 1)], Y[where(finite(Y) EQ 1)], 2, Yfit, w = 1.0/err_pix[smooth_indexes])
-      smooth_1[K]    = Yfit[opts.win_dim_r]
+      smooth_1[K]    = result[0] + result[1]*X[3] + result[2]*(X[3]^2)
 
     ENDFOR
 
@@ -122,7 +118,7 @@ FUNCTION pr_smooth_pix_v30, opts, vi_pix, qa_pix, doy_pix, nb, doys_reg,$
 ; Reset the first and last values to the original VI values (so I don't have to set them to 0...)
   smooth_2[0:(opts.win_dim_r-1)]     = vi_pix_ord[0:(opts.win_dim_r-1)]     
   smooth_2[(nb-opts.win_dim_r):nb-1] = vi_pix_ord[(nb-opts.win_dim_r):nb-1]
-
+  
 ; return smoothed pixel
   return, smooth_2
 

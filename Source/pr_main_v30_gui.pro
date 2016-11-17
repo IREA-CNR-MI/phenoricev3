@@ -25,7 +25,7 @@
   ; Set some options for test processing
   ;- --------------------------------------------------------- ;
   
-  debug          = 1            ; Specify if using "standard" processing for debug purposes.
+  debug          = 0           ; Specify if using "standard" processing for debug purposes.
                               ; If set to 1, parallel processing is not used so that the debug is easier
   resizeonmask   = 0
   test_data      = 1           ; Leads to using default input data and parameters (for testing purposes)
@@ -41,7 +41,7 @@
   start_year     = 2013          ; Start and end year for the test run
   end_year       = 2013
 
-  shp_check      = 1
+  shp_check      = 0
   check_R2       = 0.95
 
   ;- --------------------------------------------------------- ;
@@ -56,7 +56,7 @@
   META           = 1             ; Specify if saving input multitemporal files or just use "virtual" in-memory files
   ; referring to the input single-data - avoids creating huge "physical" input files !
 
-  force_rebuild  = 0             ; Flag. if set to 1 the input files are rebuilt (overwritten) even if already existing
+  force_rebuild  = 1             ; Flag. if set to 1 the input files are rebuilt (overwritten) even if already existing
   force_resmooth = 1             ; Flag. if set to 1 the smoothed file is rebuilt (overwritten) even if already existing
   overwrite_out  = 1             ; If = 0, then trying to overwrite existing outputs is NOT POSSIBLE
   fullout        = 1             ; Specify if also building an output file containing all bands - obsolete !
@@ -149,7 +149,7 @@
       max_aft_win    : [50/8,114/8],$;  First index: min number of compositing periods between min and max;
       mat_check      : 1 ,$
       mat_win        : [30/8, 50/8],$;
-      lst            : 1   ,$           ; Check if min occurs in a period with LST above a given threshold ? ( 1 = Yes)
+      lst            : 1   ,$           ; Check if min occurs in a period with LST abowriteve a given threshold ? ( 1 = Yes)
       lst_thresh     : 15,     $ ; Threshold for LST (in °C)
 
       ; criteria for vi shape checks
