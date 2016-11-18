@@ -50,7 +50,7 @@
 
   ncpus          = !CPU.hw_ncpu - 1 ; Find number of available cores - KEEP ONE FREE TO AVOID OVERLOAD !!!!!
   method         = 'parallel-line'; Processing method *"parallel-line" (faster - difficult to debug ! ))
-  chunksize      = 200             ; Number of lines to assign to each core: the higher, the fastest, but the
+  chunksize      = 50             ; Number of lines to assign to each core: the higher, the fastest, but the
   ; highest also the memory load !
 
   META           = 1             ; Specify if saving input multitemporal files or just use "virtual" in-memory files
@@ -266,7 +266,7 @@
 
     IF (stard_doy_seas1 LT 0) THEN BEGIN
       range_seas1_cor = 365+range_seas_1
-      IF (total(sel_seasons[0:1]) EQ 2)           THEN Inters_1_2_cor = cgsetintersection(range_seas1_cor, range_seas_2)  ELSE inters_1_2_cor = -999
+      IF (total(sel_seasons[0:1]) EQ 2)            THEN Inters_1_2_cor = cgsetintersection(range_seas1_cor, range_seas_2)  ELSE inters_1_2_cor = -999
       IF ((sel_seasons [0] + sel_seasons[2] )EQ 2) THEN Inters_1_3_cor = cgsetintersection(range_seas1_cor, range_seas_3) ELSE inters_1_3_cor = -999
       IF ((sel_seasons [0] + sel_seasons[3] )EQ 2) THEN Inters_1_4_cor = cgsetintersection(range_seas1_cor, range_seas_4) ELSE inters_1_4_cor = -999
 
