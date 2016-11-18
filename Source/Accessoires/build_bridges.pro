@@ -10,9 +10,9 @@ function build_bridges, ncpus, nthreads
 	;Scd, current=pwd
 	for cpu=0,ncpus-1 do begin
 		; create bridge
-		print, cpu
-		logfile = "/home/lb/log_bridge_"+strtrim(string(cpu),2)+'.log'
-		bridges[cpu] =  obj_new('IDL_IDLBridge', OUTPUT=logfile)
+		
+		
+		bridges[cpu] =  obj_new('IDL_IDLBridge')
 		
 	;	Obj_New('IDL_IDLBridge_ENVI'); obj_new('IDL_IDLBridge', OUTPUT=logfile)
 		; expand path so that routines in the path are found !
