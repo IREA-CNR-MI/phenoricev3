@@ -28,7 +28,7 @@
   debug          = 0            ; Specify if using "standard" processing for debug purposes.
                               ; If set to 1, parallel processing is not used so that the debug is easier
   resizeonmask   = 1
-  test_data      = 0           ; Leads to using default input data and parameters (for testing purposes)
+  test_data      = 1          ; Leads to using default input data and parameters (for testing purposes)
   test_folder    = '/home/lb/Temp/PHL_Clipped/'  ; testing data folder
   mapscape       = 1             ; Specify to use "mapscape-like" input files --> Leads to changes in NODATA values and (possibly)
   

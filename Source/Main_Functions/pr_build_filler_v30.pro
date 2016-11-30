@@ -42,8 +42,8 @@ PRO pr_build_filler_v30, avail_years_files, no_data, in_band, out_name_filler
   ; Save output filler file
   file_mkdir,file_dirname(out_name_filler)
   envi_write_envi_file, avg_data, out_name = out_name_filler, r_fid = r_fid,  interleave = 0, $
-    nb =1, nl = nl, ns = ns, map_info = map_info,/no_open
-  envi_file_mng, id = r_fid, /remove
+    nb =1, nl = nl, ns = ns, map_info = map_info, /no_open
+  
   heap_gc
 
 END
