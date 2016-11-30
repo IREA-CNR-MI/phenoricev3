@@ -36,9 +36,8 @@ FUNCTION pr_smooth_pix_v30, opts, vi_pix, qa_pix, doy_pix, nb, doys_reg,$
 
   doys_ord    = sort(doy_pix)
   vi_pix_ord  = float(vi_pix[doys_ord])
-  ;vi_pix_ord[where(vi_pix_ord EQ 32767)] = !values.F_NaN
-  wherena = where(vi_pix_ord EQ -3000, count )
-  if (count NE 0 ) then vi_pix_ord[wherena] = !values.F_NaN
+  vi_pix_ord[where(vi_pix_ord EQ 32767)] = !values.F_NaN
+  vi_pix_ord[where(vi_pix_ord EQ -3000)] = !values.F_NaN
   doy_pix_ord = long(doy_pix[doys_ord])
   qa_pix_ord  = qa_pix[doys_ord]
   vi_pix_fl   = vi_pix_ord
@@ -70,7 +69,7 @@ FUNCTION pr_smooth_pix_v30, opts, vi_pix, qa_pix, doy_pix, nb, doys_reg,$
       smooth_indexes = k+sum_index
       Y              = vi_pix_fl[smooth_indexes]
       X              = doy_pix_ord[smooth_indexes]
-      result = polyfitfast(X[where(finite(Y) EQ 1)], Y[where(finite(Y) EQ 1)], 2, Yfit, w = 1.0/err_pix[smooth_indexes])
+      result = polyfitfast(X[where(finite(Y) EQ 1)], Y[where(finite(Y) EQ 1)], 2, w = 1.0/err_pix[smooth_indexes], yfit)
       smooth_1[K]    = result[0] + result[1]*X[3] + result[2]*(X[3]^2)
 
     ENDFOR
