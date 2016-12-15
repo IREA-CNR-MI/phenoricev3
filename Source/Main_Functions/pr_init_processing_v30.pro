@@ -215,10 +215,10 @@ FUNCTION pr_init_processing_v30, in_files, opts, out_rast_list, ind_year
     ;-  Initialize bridges - one for each cpu !
     ;- ----------------------------------------------------------------------------
 
-;    IF opts.debug EQ 0 THEN BEGIN
-;      print, "# --- Initializing CPU bridges - please wait ! ---"
-;      bridges = build_bridges(opts.ncpus)   ; Create bridges
-;    ENDIF
+    IF opts.debug EQ 0 THEN BEGIN
+      print, "# --- Initializing CPU bridges - please wait ! ---"
+      bridges = build_bridges(opts.ncpus)   ; Create bridges
+    ENDIF
 
     print, "# --- Starting the processing ---"
     t1 = systime(1)
@@ -307,18 +307,18 @@ FUNCTION pr_init_processing_v30, in_files, opts, out_rast_list, ind_year
         ; If debug not choosen, pass variables to bridges and execute pr_process_v30_parline to do
         ; the per-pixel processing
         IF (opts.debug EQ 0 ) THEN BEGIN
-          
-          FOR cpu=0,opts.ncpus-1 DO BEGIN
-            ; create bridge
-
-
-            bridges[cpu] =  obj_new('IDL_IDLBridge')
-
-            ; Obj_New('IDL_IDLBridge_ENVI'); obj_new('IDL_IDLBridge', OUTPUT=logfile)
-            ; expand path so that routines in the path are found !
-
-            ;(bridges[cpu])->Execute, 'Envi, /RESTORE_BASE_SAVE_FILES & Message, /RESET'
-          ENDFOR
+;          
+;          FOR cpu=0,opts.ncpus-1 DO BEGIN
+;            ; create bridge
+;
+;
+;            bridges[cpu] =  obj_new('IDL_IDLBridge')
+;
+;            ; Obj_New('IDL_IDLBridge_ENVI'); obj_new('IDL_IDLBridge', OUTPUT=logfile)
+;            ; expand path so that routines in the path are found !
+;
+;            ;(bridges[cpu])->Execute, 'Envi, /RESTORE_BASE_SAVE_FILES & Message, /RESET'
+;          ENDFOR
           ;- ----------------------------------------------------------------------------
           ;-  Process data
           ;- ----------------------------------------------------------------------------
