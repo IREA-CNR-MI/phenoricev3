@@ -9,7 +9,7 @@ library(gdalUtils)
 library(mapview)
 
 
-it_shape_file_16 = '/home/lb/projects/ermes/datasets/Field_data/2016/Italy/Static_info/IT_Field_data_static_2016_20161114.shp'
+it_shape_file_16 = "/home/lb/projects/ermes/datasets/Field_data/2016/Italy/Static_info/IT_Field_data_static_2016_20161129.shp"
 it_raster_file_16 = '/home/lb/projects/ermes/datasets/rs_products/Phenology/IT/2016/v1.0/Outputs/2016/Phenorice_IT_2016.dat'
 it_2km_tif_16 = '/home/lb/projects/ermes/datasets/rs_products/Phenology/IT/2016/v1.0/Outputs/ERMES_Grid/TIFFS/2016/MinDoys/IT_Phenology_MinDoys_2016_203.tif'
 
@@ -17,13 +17,14 @@ it_shape_file_15 = '/home/lb/projects/ermes/datasets/Field_data/2015/Italy/IT_St
 it_raster_file_15 = '/home/lb/projects/ermes/datasets/rs_products/Phenology/IT/2016/v1.0/Outputs/2015/Phenorice_IT_2015.dat'
 it_2km_tif_15 = '/home/lb/projects/ermes/datasets/rs_products/Phenology/IT/2016/v1.0/Outputs/ERMES_Grid/TIFFS/2015/MinDoys/IT_Phenology_MinDoys_2015.tif'
 
-it_shape_file_15 = '/home/lb/projects/ermes/datasets/Field_data/2014/Italy/IT Static info/IT_Field_data_static_2014.shp'
+it_shape_file_14 = '/home/lb/projects/ermes/datasets/Field_data/2014/Italy/IT Static info/IT_Field_data_static_2014.shp'
 it_raster_file_14 = '/home/lb/projects/ermes/datasets/rs_products/Phenology/IT/2016/v1.0/Outputs/2014/Phenorice_IT_2014.dat'
 it_2km_tif_14 = '/home/lb/projects/ermes/datasets/rs_products/Phenology/IT/2016/v1.0/Outputs/ERMES_Grid/TIFFS/2014/MinDoys/IT_Phenology_MinDoys_2014.tif'
 
 it_grid_reduced = '/home/lb/phenorice/PhenoRice/Processing/Validation_Ermes/IT/Accessory/Grid_MODIS_250_reduced_red.shp'
 
-out_folder = "D:/Temp/PhenoRice/Processing/Validation_Ermes/IT"
+out_folder_gen = "/home/lb/phenorice/PhenoRice/Processing/Validation_Ermes/2016"
+dir.create(out_folder, recursive = TRUE)
 Accessory_folder = file.path(out_folder, 'Accessory')
 
 #Inizio calcoli -----
@@ -37,7 +38,8 @@ name_rast_14_sinu = file.path(Accessory_folder, 'Static_info_2014_sinu.tiff')
 name_rast_14_sinu_water = file.path(Accessory_folder, 'Static_info_2014_sinu_water.tiff')
 name_rast_14_sinu_dry =    file.path(Accessory_folder,'Static_info_2014_sinu_dry.tiff')
 
-it_grid_reduced = file.path(out_folder,'Accessory','Grid_MODIS_250_reduced_red.shp')
+out_folder = file.path(out_folder_gen, "IT")
+it_grid_reduced = file.path(out_folder,'Accessory','Grid_MODIS_250_reduced.shp')
 rast_grid  = file.path(out_folder,'Accessory','Grid_MODIS_250_reduced.tif')
 
 
@@ -45,8 +47,8 @@ it_shape_14 = readOGR (dirname(it_shape_file_14), file_path_sans_ext(basename(it
 it_rast_14 = raster(it_raster_file_14, band = 2)
 it_2km_14 = raster(it_2km_tif_14)
 # it_grid_sp = readOGR(dirname(it_grid_reduced), file_path_sans_ext(basename(it_grid_reduced)))
-raster::values(it_rast_14)[which(raster::values(it_rast_14) > 180)] =NA
-raster::values(it_rast_14)[which(raster::values(it_rast_14) == 0)] =NA
+raster::values(it_rast_14)[which(raster::values(it_rast_14) > 180)] = NA
+raster::values(it_rast_14)[which(raster::values(it_rast_14) == 0)] = NA
 
 
 it_grid_250 = readOGR(dsn = dirname(it_grid_reduced),layer = basename(file_path_sans_ext(it_grid_reduced)))
@@ -166,6 +168,74 @@ proall_15 = ZonalPipe(it_grid_reduced,raster_obs_15,rast_grid, 'pippo',
 proallcount_15 = ZonalPipe(it_grid_reduced,raster_obs_15,rast_grid, 'pippo',
                            'id', stat="countna", cut = F)
 
+#2016
+
+name_shape_16_sinu = file.path(Accessory_folder, 'Static_info_2016_sinu.shp')
+name_shape_16_sinu_water = file.path(Accessory_folder, 'Static_info_2016_sinu_water.shp')
+name_shape_16_sinu_dry =    file.path(Accessory_folder, 'Static_info_2016_sinu_dry.shp')
+
+name_rast_16_sinu = file.path(Accessory_folder, 'Static_info_2016_sinu.tiff')
+name_rast_16_sinu_water = file.path(Accessory_folder, 'Static_info_2016_sinu_water.tiff')
+name_rast_16_sinu_dry =    file.path(Accessory_folder,'Static_info_2016_sinu_dry.tiff')
+
+it_shape_16 = readOGR (dirname(it_shape_file_16), file_path_sans_ext(basename(it_shape_file_16)))
+it_rast_16 = raster(it_raster_file_16, band = 2)
+it_2km_16 = raster(it_2km_tif_16)
+# it_grid_sp = readOGR(dirname(it_grid_reduced), file_path_sans_ext(basename(it_grid_reduced)))
+raster::values(it_rast_16)[which(raster::values(it_rast_16) > 180)] =NA
+raster::values(it_rast_16)[which(raster::values(it_rast_16) == 0)] =NA
+
+it_shape_16 = readOGR (dirname(it_shape_file_16), basename(file_path_sans_ext((it_shape_file_16))))
+levels(it_shape_16@data$sowing_met) = c("Dry","Water","Unknown")
+crop_rast_16 = crop(it_rast_16, extent(it_grid_250))
+it_shape_16@data$sowing_met[which(is.na(it_shape_16@data$sowing_met))] = 'Unknown'
+# it_shape_16@data$sowing_met[which(it_shape_14@data$sowing_met == 'Unknown' & it_shape_14@data$sowing_doy< 120)] = 'Dry'
+# it_shape_14@data$sowing_met[which(it_shape_14@data$sowing_met == 'Unknown' & it_shape_14@data$sowing_doy >= 120)] = 'Water'
+
+it_shape_16 = it_shape_16[!is.na(it_shape_16@data$crop_type == 'Rice'),]
+it_shape_16 = it_shape_16[it_shape_16@data$crop_type == 'Rice' &
+                            it_shape_16@data$sowing_met != 'Unknown' &
+                            !is.na(it_shape_16@data$sowing_doy),]
+
+shape_16_sinu = spTransform(it_shape_16,CRS(proj4string(crop_rast_16)))
+shape_16_water = spTransform(it_shape_16[it_shape_16@data$sowing_met == 'Water' ,],CRS(proj4string(crop_rast_16)))
+shape_16_dry = spTransform(it_shape_16[it_shape_16@data$sowing_met == 'Dry' ,],CRS(proj4string(crop_rast_16)))
+
+writeOGR(shape_16_sinu, dsn = Accessory_folder,layer  = basename(file_path_sans_ext(name_shape_16_sinu)), driver = 'ESRI Shapefile',overwrite_layer = T )
+writeOGR(shape_16_water, dsn = Accessory_folder,layer = basename(file_path_sans_ext(name_shape_16_sinu_water)), driver = 'ESRI Shapefile',overwrite_layer = T )
+writeOGR(shape_16_dry, dsn = Accessory_folder  ,layer = basename(file_path_sans_ext(name_shape_16_sinu_dry)), driver = 'ESRI Shapefile',overwrite_layer = T )
+
+raster_obs_16 = gdal_rasterize(name_shape_16_sinu, name_rast_16_sinu,a = "sowing_doy", output_Raster = T, ot = 'UInt32',tr = c(16,16), tap = T, of = 'GTiff')
+raster_obs_wat_16 = gdal_rasterize(name_shape_16_sinu_water, name_rast_16_sinu_water,a = "sowing_doy", output_Raster = T, ot = 'UInt32',tr = c(16,16), tap = T, of = 'GTiff')
+raster_obs_16_dry = gdal_rasterize(name_shape_16_sinu_dry , name_rast_16_sinu_dry,a = "sowing_doy", output_Raster = T, ot = 'UInt32',tr = c(16,16), tap = T, of = 'GTiff')
+
+NAvalue(raster_obs_16) = 0
+NAvalue(raster_obs_wat_16) = 0
+NAvalue(raster_obs_16_dry) = 0
+
+pro_16 = ZonalPipe(it_grid_reduced,crop_rast_16,rast_grid,'pippo',
+                   'id', stat="mean", cut = T)
+
+prodry_16 = ZonalPipe(it_grid_reduced,raster_obs_16_dry,rast_grid, 'pippo',
+                      'id', stat="mean", cut = F)
+
+prodry_16_count = ZonalPipe(it_grid_reduced,raster_obs_16_dry,rast_grid, 'pippo',
+                            'id', stat="countna", cut = F)
+
+prowat_16 = ZonalPipe(it_grid_reduced,raster_obs_wat_16,rast_grid, 'pippo',
+                      'id', stat="mean", cut = F)
+
+prowatcount_16 = ZonalPipe(it_grid_reduced,raster_obs_wat_16,rast_grid, 'pippo',
+                           'id', stat="countna", cut = F)
+
+proall_16 = ZonalPipe(it_grid_reduced,raster_obs_16,rast_grid, 'pippo',
+                      'id', stat="mean", cut = F)
+
+proallcount_16 = ZonalPipe(it_grid_reduced,raster_obs_16,rast_grid, 'pippo',
+                           'id', stat="countna", cut = F)
+
+
+
 #Fine calcoli - inizio analisi e plotting ----
 
 protot_14 = join(pro_14@data, proall_14@data, by = c('id','z'), type = 'left')
@@ -191,6 +261,7 @@ profull_14$diffdry = profull_14$Mod - profull_14$FieldDry
 protot_melt_14 = melt(profull_14, measure.vars = c('Mod' , 'FieldTot',  'FieldWat', 'FieldDry', 'difftot','diffwat','diffdry'))
 stats_14 = ddply(protot_melt_14, .(variable) ,summarize, count = length(value),avg = mean(value, na.rm = T), stdev = sd(value, na.rm = T), mae = mean(abs(value),na.rm = T))
 
+#2015
 protot_15 = join(pro_15@data, proall_15@data, by = c('id','z'), type = 'left')
 protot_15 = join(protot_15, prodry_15@data, by = c('id','z'), type = 'left')
 protot_15 = join(protot_15, prowat_15@data, by = c('id','z'), type = 'left')
@@ -212,6 +283,32 @@ profull_15$diffdry = profull_15$Mod - profull_15$FieldDry
 protot_melt_15 = melt(profull_15, measure.vars = c('Mod' , 'FieldTot',  'FieldWat', 'FieldDry', 'difftot','diffwat','diffdry'))
 
 stats_15 = ddply(protot_melt_15, .(variable) ,summarize, count = length(value),avg = mean(value, na.rm = T), stdev = sd(value, na.rm = T), mae = mean(abs(value),na.rm = T))
+
+#2016
+protot_16 = join(pro_16@data, proall_16@data, by = c('id','z'), type = 'left')
+protot_16 = join(protot_16, prodry_16@data, by = c('id','z'), type = 'left')
+protot_16 = join(protot_16, prowat_16@data, by = c('id','z'), type = 'left')
+protot_16 = join(protot_16, proallcount_16@data, by = c('id','z'), type = 'left')
+protot_16 = join(protot_16, prodry_16_count@data, by = c('id','z'), type = 'left')
+protot_16 = join(protot_16, prowatcount_16@data, by = c('id','z'), type = 'left')
+names(protot_16) = c('id' ,     'z', 'Mod' , 'FieldTot', 'FieldDry',  'FieldWat','counttot','countdry','countwat')
+protot_16_tot = droplevels(subset(protot_16, !is.nan(Mod) & counttot > 0 ))
+# protot_16_dry = droplevels(subset(protot_16, !is.nan(Mod) & countdry > 125))
+# protot_16_wat = droplevels(subset(protot_16, !is.nan(Mod) & countwat > 125 ))
+
+# profull_16= rbind(protot_16_tot,protot_16_dry,protot_16_wat)
+profull_16 = protot_16_tot
+#protot_16 = droplevels(subset(protot_16,  counttot > 50 ))
+profull_16$difftot = profull_16$Mod - profull_16$FieldTot
+profull_16$diffwat = profull_16$Mod - profull_16$FieldWat
+profull_16$diffdry = profull_16$Mod - profull_16$FieldDry
+
+protot_melt_16 = melt(profull_16, measure.vars = c('Mod' , 'FieldTot',  'FieldWat', 'FieldDry', 'difftot','diffwat','diffdry'))
+
+stats_16 = ddply(protot_melt_16, .(variable) ,summarize, count = length(value),avg = mean(value, na.rm = T), stdev = sd(value, na.rm = T), mae = mean(abs(value),na.rm = T))
+
+
+
 
 profull_14$Year =2014
 profull_15$Year =2015
