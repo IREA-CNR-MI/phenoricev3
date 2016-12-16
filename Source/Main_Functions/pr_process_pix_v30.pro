@@ -191,6 +191,7 @@ FUNCTION pr_process_pix_v30, opts, smooth_pix, NDFI_pix, lst_pix, doy_pix, nb, d
             ; If a valid doy reported for max in the quarter, compute pheonometrics
             ;- --------------------------------------------------------- ;
 
+            ; "flowering" date: hlf position of wher
             ;            flooded = where(NDFI_pix GT 0, countflood)
 
             IF out_maxdoy[ind_season] NE -999 THEN BEGIN

@@ -87,7 +87,9 @@ FUNCTION pr_process_v30_parline, opts, lines, data_lc, data_VI, data_QA, data_DO
   ; on each of its pixels
   ;- ------------------------------------------------------------------
 
-  FOR line = 0, n_elements(lines)-1 DO BEGIN
+  ;FOR line = 0, n_elements(lines)-1 DO BEGIN
+stop
+  FOR line = 265, n_elements(lines)-1 DO BEGIN
 
     IF opts.META EQ 1 THEN lc_line = data_lc [*,line] ELSE lc_line = data_lc [*,line]
     lc_ok   = where(lc_line EQ 1, count_lc_ok, complement = lc_bad)   ; Find Pixels in the line with "good" lc values
@@ -99,6 +101,7 @@ FUNCTION pr_process_v30_parline, opts, lines, data_lc, data_VI, data_QA, data_DO
       FOR ind_pixel = 0, n_elements(lc_ok)-1 DO BEGIN
 
         pixel  = lc_ok[ind_pixel]
+        if (line EQ 250 AND pixel EQ 268) then stop
         IF opts.META THEN vi_pix = reform(data_vi [pixel,line,*]) ELSE vi_pix = data_vi [*,pixel,line]       ; Retrieve vi for the pixel/line tuple
 
         ; Check on vi values: vi = -3000/32767 = NODATA. Will have to remove this in the future !!!!
@@ -158,8 +161,7 @@ FUNCTION pr_process_v30_parline, opts, lines, data_lc, data_VI, data_QA, data_DO
             IF opts.META THEN err_pix = data_errors [pixel, line, *] ELSE err_pix = data_errors [*,pixel,line]
 
             ;launch smoothing
-            smooth_pix = fix(pr_smooth_pix_v30(opts, vi_pix, qa_pix, doy_pix, nb, doys_reg,$
-              smooth_1, sum_index, smooth_2, err_pix, x_vect))
+            smooth_pix = fix(pr_smooth_pix_v30(opts, vi_pix, qa_pix, doy_pix, nb, doys_reg, smooth_1, sum_index, smooth_2, err_pix, x_vect))
             IF opts.META THEN smooth_matrix[pixel, line, *] = smooth_pix ELSE smooth_matrix[*, pixel, line] = smooth_pix
 
           ENDELSE

@@ -251,11 +251,19 @@ FUNCTION pr_init_processing_v30, in_files, opts, out_rast_list, ind_year
         cpu_lines = [chunk_ranges[0]:chunk_ranges[1]]
       ENDELSE
       n_cpulines  = n_elements(cpu_lines)
-      cpu_ranges  = intarr(opts.ncpus, 2)
-      FOR cpu_n   = 0, opts.ncpus-1 DO cpu_ranges[cpu_n,*] = [n_cpulines/opts.ncpus*cpu_n, n_cpulines/opts.ncpus*(cpu_n+1)-1]   ; Divide work among CPUs
-      cpu_ranges[opts.ncpus-1,1] = n_cpulines-1  ; Last cpu gets the last lines
-      cpu_ranges  = cpu_ranges + chunk_ranges[chunk,0]
-
+      
+      if opts.debug EQ 0 then begin
+        cpu_ranges  = intarr(opts.ncpus, 2)
+        FOR cpu_n   = 0, opts.ncpus-1 DO cpu_ranges[cpu_n,*] = [n_cpulines/opts.ncpus*cpu_n, n_cpulines/opts.ncpus*(cpu_n+1)-1]   ; Divide work among CPUs
+        cpu_ranges[opts.ncpus-1,1] = n_cpulines-1  ; Last cpu gets the last lines
+        cpu_ranges  = cpu_ranges + chunk_ranges[chunk,0]
+      endif else begin
+        opts.ncpus = 1
+        cpu_ranges  = intarr(opts.ncpus, 2)
+        cpu_ranges[0,1] = n_cpulines-1  ; Last cpu gets the last lines
+        
+      endelse
+      stop
       ; Now start cycling on CPUs
 
       FOR cpu_n = 0, opts.ncpus-1 DO BEGIN  

@@ -25,9 +25,9 @@
   ; Set some options for test processing
   ;- --------------------------------------------------------- ;
   
-  debug          = 0            ; Specify if using "standard" processing for debug purposes.
+  debug          = 1            ; Specify if using "standard" processing for debug purposes.
                               ; If set to 1, parallel processing is not used so that the debug is easier
-  resizeonmask   = 1
+  resizeonmask   = 0
   test_data      =  0        ; Leads to using default input data and parameters (for testing purposes)
   test_folder    = '/home/lb/Temp/PHL_Clipped/'  ; testing data folder
   mapscape       = 0             ; Specify to use "mapscape-like" input files --> Leads to changes in NODATA values and (possibly)
@@ -50,7 +50,7 @@
 
   ncpus          = !CPU.hw_ncpu - 1 ; Find number of available cores - KEEP ONE FREE TO AVOID OVERLOAD !!!!!
   method         = 'parallel-line'; Processing method *"parallel-line" (faster - difficult to debug ! ))
-  chunksize      = 50             ; Number of lines to assign to each core: the higher, the fastest, but the
+  chunksize      = 2000             ; Number of lines to assign to each core: the higher, the fastest, but the
   ; highest also the memory load !
 
   META           = 1             ; Specify if saving input multitemporal files or just use "virtual" in-memory files
