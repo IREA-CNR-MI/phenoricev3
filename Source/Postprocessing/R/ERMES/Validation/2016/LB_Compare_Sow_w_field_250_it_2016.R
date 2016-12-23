@@ -9,15 +9,15 @@ library(gdalUtils)
 library(mapview)
 
 
-it_shape_file_16 = "/home/lb/projects/ermes/datasets/Field_data/2016/Italy/Static_info/IT_Field_data_static_2016_20161129.shp"
+it_shape_file_16 = "/home/lb/projects/ermes/datasets/Field_data/2016/Italy/Static_info/IT_Field_data_static_2016_20161219.shp"
 it_raster_file_16 = '/home/lb/projects/ermes/datasets/rs_products/Phenology/IT/2016/v1.0/Outputs/2016/Phenorice_IT_2016.dat'
 it_2km_tif_16 = '/home/lb/projects/ermes/datasets/rs_products/Phenology/IT/2016/v1.0/Outputs/ERMES_Grid/TIFFS/2016/MinDoys/IT_Phenology_MinDoys_2016_203.tif'
 
-it_shape_file_15 = '/home/lb/projects/ermes/datasets/Field_data/2015/Italy/IT_Static_info/IT_Field_data_static_2015.shp'
+it_shape_file_15 = '/home/lb/projects/ermes/datasets/Field_data/2015/Italy/IT_Static_info/IT_Field_data_static_2015_20161222.shp'
 it_raster_file_15 = '/home/lb/projects/ermes/datasets/rs_products/Phenology/IT/2016/v1.0/Outputs/2015/Phenorice_IT_2015.dat'
 it_2km_tif_15 = '/home/lb/projects/ermes/datasets/rs_products/Phenology/IT/2016/v1.0/Outputs/ERMES_Grid/TIFFS/2015/MinDoys/IT_Phenology_MinDoys_2015.tif'
 
-it_shape_file_14 = '/home/lb/projects/ermes/datasets/Field_data/2014/Italy/IT Static info/IT_Field_data_static_2014.shp'
+it_shape_file_14 = '/home/lb/projects/ermes/datasets/Field_data/2014/Italy/IT Static info/IT_Field_data_static_2014_20161222.shp'
 it_raster_file_14 = '/home/lb/projects/ermes/datasets/rs_products/Phenology/IT/2016/v1.0/Outputs/2014/Phenorice_IT_2014.dat'
 it_2km_tif_14 = '/home/lb/projects/ermes/datasets/rs_products/Phenology/IT/2016/v1.0/Outputs/ERMES_Grid/TIFFS/2014/MinDoys/IT_Phenology_MinDoys_2014.tif'
 
@@ -312,57 +312,59 @@ stats_16 = ddply(protot_melt_16, .(variable) ,summarize, count = length(value),a
 
 profull_14$Year =2014
 profull_15$Year =2015
-profull_14_15 = rbind(profull_14,profull_15)
-protot_melt_14_15 = melt(profull_14_15, measure.vars = c('Mod' , 'FieldTot',  'FieldWat', 'FieldDry', 'difftot','diffwat','diffdry'))
+profull_16$Year =2016
+profull_14_15_16 = rbind(profull_14,profull_15, profull_16)
+protot_melt_14_15_16 = melt(profull_14_15_16, measure.vars = c('Mod' , 'FieldTot',  'FieldWat', 'FieldDry', 'difftot','diffwat','diffdry'))
 
 
-it_250 = profull_14_15
-it_250_melt  = protot_melt_14_15
-stats_14_15 = ddply(it_250_melt, .(variable,Year) ,summarize, count = length(value),avg = mean(value, na.rm = T), stdev = sd(value, na.rm = T), mae = mean(abs(value),na.rm = T))
-save(it_250,it_250_melt, file = 'd:/temp/phenorice/processing/Validation_Ermes/IT/IT_val_250.RData')
+it_250 = profull_14_15_16
+it_250_melt  = protot_melt_14_15_16
+stats_14_15_16 = ddply(it_250_melt, .(variable,Year) ,summarize, count = length(value),avg = mean(value, na.rm = T), stdev = sd(value, na.rm = T), mae = mean(abs(value),na.rm = T))
+save(it_250,it_250_melt, file = file.path(out_folder,'IT_val_250.RData'))
 
 
 #END ----
 
-
-p = ggplot(droplevels(subset(protot_melt_14, variable !='difftot'& variable !='diffwat'& variable !='diffdry' & variable != 'FieldTot')), aes(x = value, color = variable ))
+# 
+# p = ggplot(droplevels(subset(protot_melt_14, variable !='difftot'& variable !='diffwat'& variable !='diffdry' & variable != 'FieldTot')), aes(x = value, color = variable ))
+# # p =p+ stat_bin(binwidth = 8, aes(y=..count../sum(..count..)))+facet_grid(~variable)+theme_bw()
+# # p = p+geom_histogram(binwidth = 8)+facet_grid(~variable)+theme_bw()
+# p = p + geom_freqpoly(binwidth = 8) #+facet_grid(~variable)+theme_bw()
+# #p = p+geom_boxplot(adjust = 1.4)+facet_grid(variable~sowing_met)+theme_bw()+geom_jitter()
+# p = p+geom_density(alpha = 0.2, adjust = 1) #+facet_grid(~variable)+theme_bw()
+# 
+# p
+# 
+# p = ggplot(droplevels(subset(protot_melt_14_15_16, variable !='difftot'& variable !='diffwat'& variable !='diffdry')), aes(x = variable, y = value ))
+# p = p + geom_violin()+theme_bw()   +ylim(50,200)
+# p
+# 
+# 
+# 
+# p = ggplot(droplevels(subset(protot_melt_14_15_16, variable !='difftot'& variable !='diffwat'& variable !='diffdry')), aes(x = value, color = variable ))
 # p =p+ stat_bin(binwidth = 8, aes(y=..count../sum(..count..)))+facet_grid(~variable)+theme_bw()
 # p = p+geom_histogram(binwidth = 8)+facet_grid(~variable)+theme_bw()
-p = p + geom_freqpoly(binwidth = 8) #+facet_grid(~variable)+theme_bw()
-#p = p+geom_boxplot(adjust = 1.4)+facet_grid(variable~sowing_met)+theme_bw()+geom_jitter()
-p = p+geom_density(alpha = 0.2, adjust = 1) #+facet_grid(~variable)+theme_bw()
-
-p
-
-p = ggplot(droplevels(subset(protot_melt_14, variable !='difftot'& variable !='diffwat'& variable !='diffdry')), aes(x = variable, y = value ))
-p = p + geom_violin()+theme_bw()   +ylim(50,200)
-p
-
-
-
-p = ggplot(droplevels(subset(protot_melt_15, variable !='difftot'& variable !='diffwat'& variable !='diffdry')), aes(x = value, color = variable ))
-p =p+ stat_bin(binwidth = 8, aes(y=..count../sum(..count..)))+facet_grid(~variable)+theme_bw()
-p = p+geom_histogram(binwidth = 8)+facet_grid(~variable)+theme_bw()
-p = p + geom_freqpoly(binwidth = 16) #+facet_grid(~variable)+theme_bw()
-#p = p+geom_boxplot(adjust = 1.4)+facet_grid(variable~sowing_met)+theme_bw()+geom_jitter()
-p = p+geom_density(alpha = 0.2, adjust = 1.2) #+facet_grid(~variable)+theme_bw()
-
-p
-
-p = ggplot(droplevels(subset(protot_melt_15, variable !='difftot'& variable !='diffwat'& variable !='diffdry')), aes(x = variable, y = value ))
-p = p + geom_boxplot()+theme_bw()   +ylim(50,200)
-p
-
-
-p = ggplot(droplevels(subset(protot_melt_14_15, variable !='difftot'& variable !='diffwat'& variable !='diffdry')), aes(x = variable, y = value ))
-p = p + geom_boxplot()+theme_bw()   +ylim(50,200)  + geom_jitter()
-p
-
-p = ggplot(droplevels(subset(protot_melt_14_15, variable !='difftot'& variable !='diffwat'& variable !='diffdry'& variable !='FieldTot')), aes(x = value, color = variable ))
-p =p+ stat_bin(binwidth = 8, aes(y=..count../sum(..count..)))+facet_grid(~variable)+theme_bw()
-p = p+geom_histogram(binwidth = 8)+facet_grid(~variable)+theme_bw()
-p = p + geom_freqpoly(binwidth = 8) #+facet_grid(~variable)+theme_bw()
-#p = p+geom_boxplot(adjust = 1.4)+facet_grid(variable~sowing_met)+theme_bw()+geom_jitter()
-p = p+geom_density(alpha = 0.2, adjust = 1.2) #+facet_grid(~variable)+theme_bw()
-
-p
+# p = p + geom_freqpoly(binwidth = 16) #+facet_grid(~variable)+theme_bw()
+# #p = p+geom_boxplot(adjust = 1.4)+facet_grid(variable~sowing_met)+theme_bw()+geom_jitter()
+# p = p+geom_density(alpha = 0.2, adjust = 1.2) #+facet_grid(~variable)+theme_bw()
+# 
+# p
+# 
+# p = ggplot(droplevels(subset(protot_melt_14_15_16, variable !='difftot'& variable !='diffwat'& variable !='diffdry')), aes(x = variable, y = value ))
+# p = p + geom_boxplot()+theme_bw()   +ylim(50,200)
+# p
+# 
+# 
+# p = ggplot(droplevels(subset(protot_melt_14_15_16, variable !='difftot'& variable !='diffwat'& variable !='diffdry')), aes(x = variable, y = value ))
+# p = p + geom_boxplot()+theme_bw()   +ylim(50,200)  + geom_jitter()
+# p
+# 
+# p = ggplot(droplevels(subset(protot_melt_14_15_16, variable !='difftot'& variable !='diffwat'& variable !='diffdry'& variable !='FieldTot')), aes(x = value, color = variable ))
+# p =p+ stat_bin(binwidth = 8, aes(y=..count../sum(..count..)))+facet_grid(~variable)+theme_bw()
+# p = p+geom_histogram(binwidth = 8)+facet_grid(~variable)+theme_bw()
+# p = p + geom_freqpoly(binwidth = 8) #+facet_grid(~variable)+theme_bw()
+# #p = p+geom_boxplot(adjust = 1.4)+facet_grid(variable~sowing_met)+theme_bw()+geom_jitter()
+# p = p+geom_density(alpha = 0.2, adjust = 1.2) #+facet_grid(~variable)+theme_bw()
+# 
+# p
+# 
