@@ -9,23 +9,26 @@ library(gdalUtils)
 library(mapview)
 
 
-it_shape_file_16 = "/home/lb/projects/ermes/datasets/Field_data/2016/Italy/Static_info/IT_Field_data_static_2016_20161219.shp"
-it_raster_file_16 = '/home/lb/projects/ermes/datasets/rs_products/Phenology/IT/2016/v1.0/Outputs/2016/Phenorice_IT_2016.dat'
-it_2km_tif_16 = '/home/lb/projects/ermes/datasets/rs_products/Phenology/IT/2016/v1.0/Outputs/ERMES_Grid/TIFFS/2016/MinDoys/IT_Phenology_MinDoys_2016_203.tif'
+it_shape_file_16 = "/media/projects/ermes/datasets/Field_data/2016/Italy/Static_info/IT_Field_data_static_2016_20161219.shp"
+it_raster_file_16 = '/media/projects/ermes/datasets/rs_products/Phenology/IT/2016/v1.0/Outputs/2016/Phenorice_IT_2016.dat'
+it_2km_tif_16 = '/media/projects/ermes/datasets/rs_products/Phenology/IT/2016/v1.0/Outputs/ERMES_Grid/TIFFS/2016/MinDoys/IT_Phenology_MinDoys_2016_203.tif'
 
-it_shape_file_15 = '/home/lb/projects/ermes/datasets/Field_data/2015/Italy/IT_Static_info/IT_Field_data_static_2015_20161222.shp'
-it_raster_file_15 = '/home/lb/projects/ermes/datasets/rs_products/Phenology/IT/2016/v1.0/Outputs/2015/Phenorice_IT_2015.dat'
-it_2km_tif_15 = '/home/lb/projects/ermes/datasets/rs_products/Phenology/IT/2016/v1.0/Outputs/ERMES_Grid/TIFFS/2015/MinDoys/IT_Phenology_MinDoys_2015.tif'
+it_shape_file_15 = '/media/projects/ermes/datasets/Field_data/2015/Italy/IT_Static_info/IT_Field_data_static_2015_20161222.shp'
+it_raster_file_15 = '/media/projects/ermes/datasets/rs_products/Phenology/IT/2016/v1.0/Outputs/2015/Phenorice_IT_2015.dat'
+it_2km_tif_15 = '/media/projects/ermes/datasets/rs_products/Phenology/IT/2016/v1.0/Outputs/ERMES_Grid/TIFFS/2015/MinDoys/IT_Phenology_MinDoys_2015.tif'
 
-it_shape_file_14 = '/home/lb/projects/ermes/datasets/Field_data/2014/Italy/IT Static info/IT_Field_data_static_2014_20161222.shp'
-it_raster_file_14 = '/home/lb/projects/ermes/datasets/rs_products/Phenology/IT/2016/v1.0/Outputs/2014/Phenorice_IT_2014.dat'
-it_2km_tif_14 = '/home/lb/projects/ermes/datasets/rs_products/Phenology/IT/2016/v1.0/Outputs/ERMES_Grid/TIFFS/2014/MinDoys/IT_Phenology_MinDoys_2014.tif'
+it_shape_file_14 = '/media/projects/ermes/datasets/Field_data/2014/Italy/IT Static info/IT_Field_data_static_2014_20161222.shp'
+it_raster_file_14 = '/media/projects/ermes/datasets/rs_products/Phenology/IT/2016/v1.0/Outputs/2014/Phenorice_IT_2014.dat'
+it_2km_tif_14 = '/media/projects/ermes/datasets/rs_products/Phenology/IT/2016/v1.0/Outputs/ERMES_Grid/TIFFS/2014/MinDoys/IT_Phenology_MinDoys_2014.tif'
 
-it_grid_reduced = '/home/lb/phenorice/PhenoRice/Processing/Validation_Ermes/IT/Accessory/Grid_MODIS_250_reduced_red.shp'
+it_grid_reduced = '/media/projects/ermes/datasets/rs_products/Phenology/Validation/2016/IT/Accessory/Grid_MODIS_250_reduced_red.shp'
 
-out_folder_gen = "/home/lb/phenorice/PhenoRice/Processing/Validation_Ermes/2016"
+out_folder_gen = "/media/projects/ermes/datasets/rs_products/Phenology/Validation/2016/"
+dir.create(out_folder_gen, recursive = TRUE)
+out_folder = file.path(out_folder_gen, "IT")
 dir.create(out_folder, recursive = TRUE)
-Accessory_folder = file.path(out_folder, 'Accessory')
+Accessory_folder = file.path(out_folder_gen, 'Accessory')
+dir.create(Accessory_folder, recursive = TRUE)
 
 #Inizio calcoli -----
 
