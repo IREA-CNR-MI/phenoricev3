@@ -3,17 +3,17 @@ library (dplyr)
 library (tidyverse)
 
 
-load("Z:/Validation/2016/GR/GR_val_2k.RData")
-load("Z:/Validation/2016/ES/ES_val_2k.RData")
-load("Z:/Validation/2016/IT/IT_val_2k.RData")
+load("/home/lb/projects/ermes/datasets/rs_products/Phenology/Validation/2016/IT/IT_val_2k.RData")
+load("/home/lb/projects/ermes/datasets/rs_products/Phenology/Validation/2016/ES/es_val_2k.RData")
+load("/home/lb/projects/ermes/datasets/rs_products/Phenology/Validation/2016/GR/GR_val_2k.RData")
 
-load("Z:/Validation/2016/GR/GR_val_or.RData")
-load("Z:/Validation/2016/ES/ES_val_or.RData")
-load("Z:/Validation/2016/IT/IT_val_or.RData")
+load("/home/lb/projects/ermes/datasets/rs_products/Phenology/Validation/2016/GR/gr_val_or.RData")
+load("/home/lb/projects/ermes/datasets/rs_products/Phenology/Validation/2016/ES/ES_val_or.RData")
+load("/home/lb/projects/ermes/datasets/rs_products/Phenology/Validation/2016/IT/IT_val_or.RData")
 
-load("Z:/Validation/2016/GR/GR_val_250.RData")
-load("Z:/Validation/2016/ES/ES_val_250.RData")
-load("Z:/Validation/2016//IT/IT_val_250.RData")
+load("/home/lb/projects/ermes/datasets/rs_products/Phenology/Validation/2016/GR/GR_val_250.RData")
+load("/home/lb/projects/ermes/datasets/rs_products/Phenology/Validation/2016/ES/ES_val_250.RData")
+load("/home/lb/projects/ermes/datasets/rs_products/Phenology/Validation/2016/IT/IT_val_250.RData")
 
 
 es_or$country         = "ES"
@@ -93,6 +93,8 @@ gr_2k   <- gr_2k %>% add_column(FieldDry = rep(NA, 10), countdry = NA, diffdry =
 
 data_2k = rbind(es_2k, it_2k, gr_2k)
 data_2k_melt = rbind(es_2k_melt, it_2k_melt, gr_2k_melt)
+
+
 
 
 # Analysis on or data ----
@@ -238,7 +240,7 @@ qplot(a, b) + xlim(80, 170) + ylim(80, 170) + geom_hex(binwidth = c(8, 8)) + sca
 
 # Analysis on 2k data ---
 
-data_2k_sub = droplevels(subset(data_2k_melt, counttot > 100))
+data_2k_sub = droplevels(subset(data_2k_melt)), counttot > 100))
 stats_2k_all = ddply(data_2k_sub, .(variable,Year), summarize, count = length(value), avg = mean(value, na.rm = T), stdev = sd(value, 
                                                                                                                                na.rm = T), mae = mean(abs(value), na.rm = T))
 stats_2k = ddply(data_2k_sub, .(variable, country), summarize, count = length(value), avg = mean(value, na.rm = T), stdev = sd(value, 
