@@ -25,7 +25,7 @@
   ; Set some options for test processing
   ;- --------------------------------------------------------- ;
   
-  debug          = 0            ; Specify if using "standard" processing for debug purposes.
+  debug          = 1            ; Specify if using "standard" processing for debug purposes.
                               ; If set to 1, parallel processing is not used so that the debug is easier
   resizeonmask   = 1
   test_data      =  0        ; Leads to using default input data and parameters (for testing purposes)
@@ -56,7 +56,7 @@
   META           = 1             ; Specify if saving input multitemporal files or just use "virtual" in-memory files
   ; referring to the input single-data - avoids creating huge "physical" input files !
 
-  force_rebuild  = 1             ; Flag. if set to 1 the input files are rebuilt (overwritten) even if already existing
+  force_rebuild  = 0             ; Flag. if set to 1 the input files are rebuilt (overwritten) even if already existing
   force_resmooth = 1             ; Flag. if set to 1 the smoothed file is rebuilt (overwritten) even if already existing
   overwrite_out  = 1             ; If = 0, then trying to overwrite existing outputs is NOT POSSIBLE
   fullout        = 1             ; Specify if also building an output file containing all bands - obsolete !
@@ -164,6 +164,7 @@
       hh             : 1, $   ; DOY of flowering (midpoint EVI Z 90th perc.)
       eos            : 1, $   ; EOS (decrease 50 %)
       int            : 1, $   ; Cumulated EVI between min and flowering
+      int_veg        : 1, $   ; Cumulated EVI between min and flowering
       maxvi          : 0, $   ; EVI at maximum
       minvi          : 0, $   ; EVI at minimum
       maxmin         : 1, $   ; Length of vegetative season
@@ -346,6 +347,7 @@
       hh             : 1, $   ; DOY of flowering (midpoint EVI Z 90th perc.)
       eos            : 1, $   ; EOS (decrease 50 %)
       int            : 1, $   ; Cumulated EVI between min and flowering
+      int_veg        : 1, $   ; Cumulated EVI between min and flowering
       maxvi          : 0, $   ; EVI at maximum
       minvi          : 0, $   ; EVI at minimum
       maxmin         : 1, $   ; Length of vegetative season

@@ -116,7 +116,7 @@ FUNCTION pr_init_processing_v30, in_files, opts, out_rast_list, ind_year
 
   nb_out = opts.n_rice + n_elements(where(opts.sel_seasons EQ 1)) * $
     (opts.max + opts.sow + opts.hh + opts.eos + $
-    opts.int + opts.maxvi + opts.minvi + opts.maxmin + opts.eosmin)
+    opts.int + opts.int_veg + opts.maxvi + opts.minvi + opts.maxmin + opts.eosmin)
 
   out_filename = in_files.out_filename
 
