@@ -78,7 +78,7 @@
 
   ; Nodata values used in MODIStsp for the different parameters
 
-  nodatas_or = [32767,32767,32767,32767,255,255,32767,32767]
+  nodatas_or = [32767,32767,32767,255,255,32767,32767]
 
   ; If mapscape inputs are used, NODATA values for Surf_Temp are different ! To be changed in mapscape !!
   IF mapscape EQ 1 THEN  nodatas_or = [-3000,32767,-1000,-1,255,255,-1,0]

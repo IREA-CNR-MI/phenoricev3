@@ -7,11 +7,11 @@ library(ireaRscripts)
 
 in_folder = "/media/nr_working/shared/PhenoRice/Processing/Senegal/January2/Outputs/"
 out_folder = "/media/nr_working/shared/PhenoRice/Processing/Senegal/January2/Outputs/sowrasters_2"
-years = paste0(seq(2003,2015,1),"/")
+years = paste0(seq(2003,2016,1),"/")
 in_folders = file.path(in_folder, years)
 
 yy = 1
-years = seq(2003,2015,1)
+years = seq(2003,2016,1)
 
 for(yy in seq(along = years)) {
 

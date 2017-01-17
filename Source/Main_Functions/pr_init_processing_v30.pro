@@ -455,7 +455,8 @@ FUNCTION pr_init_processing_v30, in_files, opts, out_rast_list, ind_year
     'SOW', 'Doy of Sowing (SOS)', $
     'HH', 'Doy of Heading (FOS)', $
     'EOS', 'Doy of Harvest (EOS)', $
-    'INT', 'Cumulated EVI', $
+    'INT', 'Cumulated EVI- SOW to EOS', $
+    'INT_VEG', 'Cumulated EVI - SOW to MAX', $
     'MAXVI', 'Maximum EVI', $
     'MINVI', 'Minimum EVI', $
     'MAXMIN', 'Length of Vegetative Season (SOS to FOS)', $

@@ -16,12 +16,19 @@ PRO pr_build_filler_v30, avail_years_files, no_data, in_band, out_name_filler,e,
     
   ENDFOREACH
   
-  
+  doy_reg = yearfile.Substring(-7,-5)
   ; TO BE DONE: Check for equal dimensions somehow ! If not equal, do a layer stacking !
   in_lta  = envimetaspectralraster(raster_list, spatialref = raster.spatialref)
-  or_data = in_lta.getdata()
+  or_data = float(in_lta.getdata())
   dove_na = where(or_data EQ no_data)
   or_data[dove_na] = !values.f_nan
+  
+  ; Do a check on the difference between reported DOY and theoric doy - needed to 
+  ; avoid problems on averages computation for the last image of the year
+  dove_bigdiff = where(abs(or_data - doy_reg) GT 18) 
+  or_data[dove_bigdiff] = or_data[dove_bigdiff] + 365  ; Substiute "wrong" doys ! 
+  
+  
   avg_data = mean(or_data, dimension=3, /Nan)    ; Compute average
   dove_na_avg = where(finite(avg_data) EQ 0, na_avg_cnt)   ; Where infinite, set to NA
   IF (na_avg_cnt NE 0 ) THEN BEGIN

@@ -50,7 +50,7 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
   vect_mins_pos = fix([opts.doy_1q[0],opts.doy_2q[0],opts.doy_3q[0],opts.doy_4q[0]])
   min_pos = min(vect_mins_pos[where(opts.sel_seasons EQ 1)])
 
-  ; Find the "maximum" doy to be considered for searching a Sowing Date
+  ; Find the "maximum" doy to be considered fors searching a Sowing Date
   vect_maxs_pos = fix([opts.doy_1q[1],opts.doy_2q[1],opts.doy_3q[1],opts.doy_4q[1]])
   max_pos = max(vect_maxs_pos[where(opts.sel_seasons EQ 1)])
 
