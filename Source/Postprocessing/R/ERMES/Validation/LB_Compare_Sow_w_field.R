@@ -71,7 +71,7 @@ it_grid_sp = readOGR(dirname(it_grid), file_path_sans_ext(basename(it_grid)))
 raster::values(it_rast_15)[which(raster::values(it_rast_15) > 180)] =NA
 raster::values(it_rast_15)[which(raster::values(it_rast_15) == 0)] =NA
 
-it_ras_fields_15 = extract(it_rast_15,it_shape_15,weights=TRUE,fun = mean, small = T,  na.rm = T, df = T)
+it_ras_fields_15 = raster::extract(it_rast_15,it_shape_15,weights=TRUE,fun = mean, small = T,  na.rm = T, df = T)
 
 save(it_ras_fields_15, file = '/media/projects/ermes/datasets/rs_products/Phenology/Validation/2016/IT/IT_15.RData')
 #load('d:/temp/phenorice/processing/Validation_Ermes/IT_15.RData')
@@ -110,7 +110,8 @@ it_joined_14$Sow_MOD[which(it_joined_14$Sow_MOD == 0)] = NA
 it_joined_14$sowing_doy = as.numeric(as.character(it_joined_14$sowing_doy))
 it_joined_14$diff = it_joined_14$Sow_MOD - it_joined_14$sowing_doy
 
-sub_14 = droplevels(subset(it_joined_14, crop_type =='Rice' & is.na(sowing_doy) ==FALSE & Sow_MOD !=0 ))
+
+sub_14 = droplevels(subset(it_joined_14, crop_type == 'Rice' & is.na(sowing_doy) == FALSE ))
 levels(sub_14$sowing_met) = c("Dry",   "Water","Unknown")
 sub_14$sowing_met[which(is.na(sub_14$sowing_met))] = 'Unknown'
 #sub_14$sowing_met[which(sub_14$sowing_met == 'Unknown' )] = 'Water'
@@ -118,6 +119,37 @@ sub_14 = droplevels(subset(sub_14, sowing_met !='Unknown'))
 #  sub_14$sowing_met[which(sub_14$sowing_met == 'Unknown' & sub_14$sowing_doy < 120)] = 'Dry'
 #  sub_14$sowing_met[which(sub_14$sowing_met == 'Unknown' & sub_14$sowing_doy >= 120)] = 'Water'
 joinedmelt_14 = melt(sub_14, measure.vars = c("sowing_doy","Sow_MOD","diff"))
+
+#2016
+
+it_shape_16 = readOGR (dirname(it_shape_file_16), file_path_sans_ext(basename(it_shape_file_16)))
+it_rast_16 = raster(it_raster_file_16, band = 2)
+it_2km_16 = raster(it_2km_tif_16)
+raster::values(it_rast_16)[which(raster::values(it_rast_16) > 180)] =NA
+raster::values(it_rast_16)[which(raster::values(it_rast_16) == 0)] =NA
+
+it_ras_fields_16 = raster::extract(it_rast_16,it_shape_16,weights=TRUE,fun = mean,na.rm = T, df = T)
+save(it_ras_fields_16, file = 'Z:/Validation/2016/IT/IT_16.RData')
+# ras_fields_stdev_16 = extract(it_rast,it_shape_16,fun = sd, na.rm = T, df = T)
+load('Z:/Validation/2016/IT/IT_16.RData')
+it_ras_fields_16$parcel_id = it_shape_16@data$parcel_id
+
+it_joined_16 = join(it_shape_16@data, it_ras_fields_16, type = 'left')
+it_joined_16$user_id = NULL
+names(it_joined_16)[17] = 'Sow_MOD'
+it_joined_16$Sow_MOD[which(it_joined_16$Sow_MOD == 0)] = NA
+it_joined_16$sowing_doy = as.numeric(as.character(it_joined_16$sowing_doy))
+it_joined_16$diff = it_joined_16$Sow_MOD - it_joined_16$sowing_doy
+
+sub_16 = droplevels(subset(it_joined_16, crop_type =='Rice' & is.na(sowing_doy) == FALSE ))
+levels(sub_16$sowing_met) = c("Dry",   "Water","Unknown")
+sub_16$sowing_met[which(is.na(sub_16$sowing_met))] = 'Unknown'
+#sub_16$sowing_met[which(sub_16$sowing_met == 'Unknown' )] = 'Water'
+sub_16 = droplevels(subset(sub_16, sowing_met !='Unknown'))
+#  sub_16$sowing_met[which(sub_16$sowing_met == 'Unknown' & sub_16$sowing_doy < 120)] = 'Dry'
+#  sub_16$sowing_met[which(sub_16$sowing_met == 'Unknown' & sub_16$sowing_doy >= 120)] = 'Water'
+joinedmelt_16 = melt(sub_16, measure.vars = c("sowing_doy","Sow_MOD","diff"))
+
 
 p = ggplot(joinedmelt_14, aes(x = sowing_met ,y = value, fill = variable ))
 p = p + geom_boxplot()
