@@ -3,10 +3,12 @@
 
 library(raster)
 library(dplyr)
+library(tidyverse)
+library(scales)
 library(ireaRscripts)
 
-in_folder = "/media/nr_working/shared/PhenoRice/Processing/Senegal/January2/Outputs/"
-out_folder = "/media/nr_working/shared/PhenoRice/Processing/Senegal/January2/Outputs/sowrasters_2"
+in_folder = "/home/lb//nr_working/shared/PhenoRice/Processing/Senegal/January2/Outputs/"
+out_folder = "/home/lb/nr_working/shared/PhenoRice/Processing/Senegal/January2/Outputs/sowrasters_2"
 years = paste0(seq(2003,2016,1),"/")
 in_folders = file.path(in_folder, years)
 
@@ -316,14 +318,14 @@ lgtwet_stats = summarise(group_by(lgt_data_wet, year), mean = mean(DOY), sd =sd(
 
 save(sowdry_stats,eosdry_stats,flowdry_stats, sowwet_stats, eoswet_stats, flowwet_stats,
      lgtdry_stats,lgtwet_stats,
-     file = '/media/nr_working/shared/PhenoRice/Processing/Senegal/January2/Outputs/sowrasters_2/Statistics.RData')
-load('/media/nr_working/shared/PhenoRice/Processing/Senegal/January2/Outputs/sowrasters_2/Statistics.RData')
+     file = '/home/lb/nr_working/shared/PhenoRice/Processing/Senegal/January2/Outputs/sowrasters_2/Statistics.RData')
+load('/home/lb/nr_working/shared/PhenoRice/Processing/Senegal/January2/Outputs/sowrasters_2/Statistics.RData')
 #
  sow_data_all = rbind(sow_data_dry, sow_data_wet)
  sow_data_all$Date = doytodate(sow_data_all$DOY, 2000)
  p = ggplot(sow_data_all) + theme_bw()
  p = p + geom_histogram(aes (x = doytodate(DOY, 2014), y = ..count.. * 231.656*231.656/10000), binwidth = 8,
-                        fill = 'grey75', color = 'black') + facet_wrap(~year)
+                        fill = 'grey75', color = 'black') + facet_wrap(~year, scales = 'free_x')
  p = p + ylab("Area [ha]")+ xlab ('Date') + scale_x_date(date_breaks = "1 month",  date_labels = "%b")
  p = p + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1 ))
  p
@@ -369,12 +371,30 @@ data_tot
   stats <- data_tot %>% 
    group_by(wrappe) %>% 
    do(glance(lm(mean ~ year, .)))
+  stats2 <- data_tot %>% 
+    group_by(wrappe) %>% 
+    do(tidy(lm(mean ~ year, .))) %>% 
+    filter(term == "year") %>% 
+    select(wrappe, estimate)
+  
+  ranges <- data_tot %>% 
+    group_by(wrappe) %>% 
+   summarize(max2 = max(mean))
+
+stats = left_join(stats, ranges, by = 'wrappe')
+stats = left_join(stats, stats2, by = 'wrappe')
+
+
  
- p <- ggplot(data_tot, aes (x = year, y = doytodate(mean,2001)))  + 
-        geom_point() + 
-        geom_smooth(method = 'lm') + 
+ p <- ggplot(data_tot) +
+        geom_text(data = stats, aes(x = 2003, y = max2+3, label = paste0("r2 = " , format(r.squared, digits = 1 ),
+                                    "; p = "  , format(p.value, digits = 1, scientific = F ), 
+                                    " slp = ", format(estimate, digits = 1, scientific = F ))), vjust = 1, hjust = 0, fontface = 'italic') + 
+        geom_point(aes(x = year, y = mean)) + 
+        geom_smooth(aes(x = year, y = mean),method = 'lm') + 
         theme_bw() + 
-        facet_wrap(~wrappe, scales = 'free_y', ncol = 2)
+        facet_wrap(~wrappe, scales = 'free', ncol = 2)+
+        ylab("Average") + xlab ('Year') 
 p
  #
 # ggplot(data = areamelt, aes(x = x, y = y, label=y))+
