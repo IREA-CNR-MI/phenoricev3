@@ -37,7 +37,7 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
 
   e = envi(/HEADLESS)         ; Start envi in batch mode
   proc_year = opts.proc_year  ; get processing year
-  compare_file = e.openraster('/media/projects/ermes/datasets/rs_products/MODIS/WA/VI_16Days_250m_v5/EVI/MOD13Q1_EVI_2000_161.dat')
+  compare_file = e.openraster('/home/lb/phenorice/RedRiver/Input/VI_16Days_250m_v5/EVI/MOD13Q1_EVI_2014_033.dat')
   nrows = compare_file.nrows
   ncols = compare_file.ncolumns
   ;- --------------------------------------------------------- ;

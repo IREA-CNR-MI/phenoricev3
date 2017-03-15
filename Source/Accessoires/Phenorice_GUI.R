@@ -209,9 +209,9 @@ flood_check = gradio(items = c('On','Off'), text = 'Select', container=flood_gro
 
 lgt_group <- ggroup(horizontal = TRUE, container=criteria_group)  				# Main group
 lgt_lab <- glabel(text = 'Vegetative Season Length -   Min: ', justify = "right" , container=lgt_group, width = 8)
-lgtlow_wid <- gspinbutton(from = 60, to = 180, by = 8, container=lgt_group,horizontal =F, width = 30, value = general_opts$lgtlow )
+lgtlow_wid <- gspinbutton(from = 30, to = 90, by = 8, container=lgt_group,horizontal =F, width = 30, value = general_opts$lgtlow )
 lgt_lab <- glabel(text = ' Max: ', justify = "right" , container=lgt_group, width = 8)
-lgtup_wid <- gspinbutton(from = 60, to = 180, by = 8, container=lgt_group,horizontal =F, width = 30 , value = general_opts$lgtup )
+lgtup_wid <- gspinbutton(from = 30, to = 90, by = 8, container=lgt_group,horizontal =F, width = 30 , value = general_opts$lgtup )
 addSpring(lgt_group)
 lgt_check = gradio(items = c('On','Off'), text = 'Select', container=lgt_group, selected = match(general_opts$lgt_check, c('On','Off')), horizontal = T)
 

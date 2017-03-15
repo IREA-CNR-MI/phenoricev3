@@ -82,8 +82,16 @@ FUNCTION pr_init_processing_v30, in_files, opts, out_rast_list, ind_year
   ; Get the acquisition times from the header & retrieve acquisition years
   getheader = envitask('RasterMetadataItem')
   getheader.input_raster = in_vi
-  getheader.key = 'time' &  getheader.execute
+  getheader.key = 'time' 
+  getheader.execute
   times     = getheader.value
+  
+  Task = ENVITask('RasterMetadataItem')
+ ; Define inputs
+  Task.INPUT_RASTER = in_vi
+  Task.KEY = 'wavelength'
+  Task.Execute
+  
   years     = times.substring(0,3)
   prev_y    = where(years EQ opts.proc_year -1)
 
