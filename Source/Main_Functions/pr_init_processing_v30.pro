@@ -63,6 +63,8 @@ FUNCTION pr_init_processing_v30, in_files, opts, out_rast_list, ind_year
     in_blue    = out_rast_list.blue_file
     in_rely    = out_rast_list.rely_file
     in_ui      = out_rast_list.ui_file
+    
+    
 ;    
   ENDELSE
 
