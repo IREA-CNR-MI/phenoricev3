@@ -107,7 +107,8 @@ FUNCTION pr_checkshape, opts, smooth_pix, out_mindoy, out_maxdoy, out_eosdoy, do
         IF status GT 0 THEN BEGIN
           ; Check correlation between original and fitted
           corr_hyper = correlate(smooth_sub, yfit)
-          IF (corr_hyper^2 GT opts.check_R2) AND result[1] GT 2500 THEN BEGIN
+          ;IF (corr_hyper^2 GT opts.check_R2) AND result[1] GT 2500 THEN BEGIN
+          IF (corr_hyper^2 GT opts.check_R2) THEN BEGIN
             checks_shape[okseason] = 1 
             ENDIF ELSE BEGIN
             checks_shape[okseason] = 0

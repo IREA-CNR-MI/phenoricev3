@@ -265,11 +265,14 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
       ; in the last part of the period, so that when "substituting" real doy with theoretical
       ; we get less "real" difference
 
-      doys_required = fix(doys_required) + 8
+      ;doys_required = fix(doys_required) + 8
 
       result.metadata.additem,    'Wavelength', doys_required
       result.metadata.additem,    'time', times
       result.metadata.updateitem, 'Band Names', in_bands_or[band] + "_" + yeardoys_required
+      save_var = path_create([file_dirname(out_name), "tempsav.sav"])
+      SAVE, times, doys_required, yeardoys_required, save_var, FILENAME = save_var
+
 
 ;      resultHash     = result.dehydrate()
 ;      resultHashJSON = json_serialize(resultHash)

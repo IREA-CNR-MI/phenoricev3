@@ -83,15 +83,21 @@ FUNCTION pr_init_processing_v30, in_files, opts, out_rast_list, ind_year
 
   ; Get the acquisition times from the header & retrieve acquisition years
   getheader = envitask('RasterMetadataItem')
-  getheader.input_raster = in_vi
-  getheader.key = 'time' &  getheader.execute
-  times     = getheader.value
+  
+  ; Temporary change to overcome bug in Linux IDL 8.6
+  ;   
+  ;getheader.input_raster = in_vi
+  ;getheader.key = 'time' &  getheader.execute
+  ;times     = getheader.value
+  save_var = path_create([file_dirname(in_files.EVI_FILE), "tempsav.sav"])
+  RESTORE, save_var
   years     = times.substring(0,3)
   prev_y    = where(years EQ opts.proc_year -1)
 
   ; Get the acquisition DOYS from the header
-  getheader.key = 'Wavelength' &  getheader.execute
-  doys_reg  = getheader.value
+  ;getheader.key = 'Wavelength' &  getheader.execute
+  ;doys_reg  = getheader.value
+  doys_reg  = doys_required + 8
   
   ; add 8 to the reported acquisition DOYs --> done because usually the real DOYs are
   ; in the last part of the period, so that when "substituting" real doy with theoretical
