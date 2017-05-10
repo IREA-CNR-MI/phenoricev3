@@ -23,7 +23,7 @@ gr_2km_tif_14 = '/media/projects/ermes/datasets/rs_products/Phenology/GR/2016/v1
 
 out_folder_gen = "/media/projects/ermes/datasets/rs_products/Phenology/Validation/2016"
 dir.create(out_folder_gen, recursive = TRUE)
-out_folder = file.path(out_folder_gen, "GR")
+out_folder = file.path(out_folder_gen, "ES")
 dir.create(out_folder, recursive = TRUE)
 Accessory_folder = file.path(out_folder_gen, 'Accessory')
 dir.create(Accessory_folder, recursive = TRUE)

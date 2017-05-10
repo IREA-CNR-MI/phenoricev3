@@ -17,7 +17,7 @@ memory.limit(8000)
 countries = c('IT','ES','GR')
 countries = c('ES')
 
-Main_Folder = "/home/lb/projects/ermes/datasets/rs_products/Phenology/%cc%/2016/v1.0/Outputs/ERMES_Grid"
+Main_Folder = "/home/lb/projects/ermes/datasets/rs_products/Phenology/%cc%/Outputs/ERMES_Grid"
 Grid_Folder = "/home/lb/projects/ermes/datasets/ERMES_Folder_Structure/%cc%/Regional/%cc%_Reference_Grid/%cc%_ERMES_Regional_Grid.shp"
 admin_shape = "/home/lb/projects/ermes/datasets/rs_products/Phenology/Ancillary_Datasets/World_Provinces/provinces_world_laea_ermes.shp"
 
@@ -44,7 +44,6 @@ for (country in countries) {
   out_folder =  file.path(str_replace_all(Main_Folder,"%cc%",country),'pdfs')
   dir.create(out_folder, recursive = T, showWarnings = F)
   dir.create(file.path(out_folder,paste0('Phenorice_',country,'_files'),'figure-latex'), recursive = T, showWarnings = F)
-  rmarkdown::render('/home/lb/Source/git/phenorice/source/Postprocessing/R/ERMES/2k_Aggregation/LB_Plot_Aggregate_pheno_and_raster_out.Rmd',
+  rmarkdown::render('/home/lb/Source/phenorice/source/Postprocessing/R/ERMES/2k_Aggregation/LB_Plot_Aggregate_pheno_and_raster_out.Rmd',
                     output_file = file.path(out_folder, paste0('Phenorice_',country,'.pdf')))
 }
-

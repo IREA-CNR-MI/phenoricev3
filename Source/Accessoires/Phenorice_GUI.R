@@ -219,7 +219,7 @@ maxeos_group <- ggroup(horizontal = TRUE, container=criteria_group)  				# Main 
 maxeos_lab <- glabel(text = 'Maturity to Harvest Length - Min: ', justify = "right" , container=maxeos_group, width = 8)
 maxeoslow_wid <- gspinbutton(from = 25, to = 90, by = 8, container=maxeos_group,horizontal =F, width = 30, value = general_opts$maxeoslow )
 maxeos_lab <- glabel(text = ' Max: ', justify = "right" , container=maxeos_group, width = 8)
-maxeosup_wid <- gspinbutton(from = 25, to = 90, by = 8, container=maxeos_group,horizontal =F, width = 30 , value = general_opts$maxeosup )
+maxeosup_wid <- gspinbutton(from = 25, to = 50, by = 8, container=maxeos_group,horizontal =F, width = 30 , value = general_opts$maxeosup )
 vi_decr_lab <- glabel(text = '% of decrease to EOS :', justify = "right" , container=maxeos_group, maxeos_group = 8)
 vi_decr_wid <- gedit(text = format(general_opts$vi_decr_thresh, justify = "right") , container=maxeos_group, width = 8)
 addSpring(maxeos_group)

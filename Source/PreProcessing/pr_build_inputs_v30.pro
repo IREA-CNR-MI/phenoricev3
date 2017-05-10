@@ -34,12 +34,9 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
   COMPILE_OPT idl2
   COMPILE_OPT hidden
 
-
   e = envi(/HEADLESS)         ; Start envi in batch mode
   proc_year = opts.proc_year  ; get processing year
-  compare_file = e.openraster('Z:/phenorice/RedRiver/Input/VI_16Days_250m_v5/EVI/MOD13Q1_EVI_2014_033.dat')
-  nrows = compare_file.nrows
-  ncols = compare_file.ncolumns
+
   ;- --------------------------------------------------------- ;
   ;-  Set processing parameters and general variables
   ;- --------------------------------------------------------- ;
@@ -50,7 +47,7 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
   vect_mins_pos = fix([opts.doy_1q[0],opts.doy_2q[0],opts.doy_3q[0],opts.doy_4q[0]])
   min_pos       = min(vect_mins_pos[where(opts.sel_seasons EQ 1)])
 
-  ; Find the "maximum" doy to be considered fors searching a Sowing Date
+  ; Find the "maximum" doy to be considered for searching a Sowing Date
   vect_maxs_pos = fix([opts.doy_1q[1],opts.doy_2q[1],opts.doy_3q[1],opts.doy_4q[1]])
   max_pos       = max(vect_maxs_pos[where(opts.sel_seasons EQ 1)])
 
@@ -156,7 +153,7 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
 
     ; Check if already existing. If no, then create it using the MODIStsp inputs + creating fillers
 
-    IF (file_test(out_name) EQ 0 OR (force_rebuild EQ 1)) THEN BEGIN
+    IF ((file_test(out_name)) EQ 0 OR (force_rebuild EQ 1)) THEN BEGIN
 
       file_delete, out_name, /ALLOW_NONEXISTENT
       file_delete,(out_name.remove(-3)+'hdr'),/ALLOW_NONEXISTENT
@@ -195,11 +192,7 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
             ENDIF ELSE BEGIN
               avail_years_files = in_files [doy_positions]   ; Get the files of previous years acquired in the same doy
               ; Launch build_filler to create an average file for the missing DOY
-              IF (file_test(out_name_filler) EQ 0  OR (force_rebuild EQ 1)) THEN BEGIN
-                pr_build_filler_v30, avail_years_files, no_data, in_bands_or[band], out_name_filler,e, compare_file
-              ENDIF ELSE BEGIN
-                print, "Filler file already existing - skipping"
-              ENDELSE
+              pr_build_filler_v30, avail_years_files, no_data, in_bands_or[band], out_name_filler
             ENDELSE
           ENDIF
           in_files_required [index_files]  =  out_name_filler  ; Put tout_rast_list.doy_filehe filler filename in the correct position of the input files list
@@ -222,41 +215,55 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
         date = yeardoys_required[file_ind]
         time = envitime(ACQUISITION = doy2date(fix(strmid(strtrim(date, 2), 5, 3)), fix(strmid(strtrim(date, 2), 0, 4)))+"T00:00:00Z")
         times[file_ind] = time.acquisition
-        raster = e.openraster(file)
-        IF (raster.ncolumns NE ncols OR raster.nrows NE nrows) THEN BEGIN
-          ref_SpatialGridRaster = envispatialgridraster(envisubsetraster(compare_file, BANDS=0), GRID_DEFINITION = Grid)
-          obj_SpatialGridRaster = envispatialgridraster(raster, GRID_DEFINITION = Grid)
-          raster                = envimetaspectralraster([obj_SpatialGridRaster], spatialref = obj_SpatialGridRaster.spatialref)
+
+        IF file_ind EQ 0 THEN BEGIN
+          raster_list = e.openraster(file)
+          IF (raster_list.metadata.hastag ('time')) THEN raster_list.metadata.updateitem, 'time', time.acquisition $
+          ELSE raster_list.metadata.additem,'time', time.acquisition
+        ENDIF ELSE BEGIN
+          raster = e.openraster(file)
+          IF (raster.metadata.hastag ('time')) THEN raster.metadata.updateitem, 'time', time.acquisition ELSE raster.metadata.additem,'time', time.acquisition
+          raster_list = [raster_list, raster]
+        ENDELSE
+
+      ENDFOREACH
+
+      ; Create multiband file using the single date rasters
+      result = envimetaspectralraster(raster_list, spatialref = raster.spatialref)
+     
+      ; on LST input, check the dimensions. If not equal to other files do a quick layer stack
+      ;(needed because MODIStsp LST output may have slightly different dimensions from the other
+      ; bands !
+
+      IF (band EQ 6) THEN BEGIN
+
+        IF META THEN  compare_file = out_rast_list.(0) ELSE compare_file = out_rast_list.(0)
+        ncols = compare_file.ncolumns
+        nrows = compare_file.nrows
+        IF (result.ncolumns NE ncols OR result.nrows NE nrows) THEN BEGIN
+          ref_SpatialGridRaster = envispatialgridraster(envisubsetraster(compare_file, BANDS=1), GRID_DEFINITION = Grid)
+          obj_SpatialGridRaster = envispatialgridraster(result, GRID_DEFINITION = Grid)
+          result = envimetaspectralraster([obj_SpatialGridRaster], spatialref = obj_SpatialGridRaster.spatialref)
+          
         ENDIF
-        IF (raster.metadata.hastag ('time')) THEN raster.metadata.updateitem, 'time', time.acquisition ELSE raster.metadata.additem,'time', time.acquisition
-        
-        IF file_ind EQ 0 THEN raster_list = raster ELSE raster_list = [raster_list, raster] 
-  
-      
-    ENDFOREACH
-
-    ; Create multiband file using the single date rasters
-    result = envimetaspectralraster(raster_list, spatialref = raster.spatialref)
-
-    ; on LST input, check the dimensions. If not equal to other files do a quick layer stack
-    ;(needed because MODIStsp LST output may have slightly different dimensions from the other
-    ; bands !
-
-    IF (band NE 0) THEN BEGIN
-
-      ; IF META THEN  compare_file = out_rast_list.(0) ELSE compare_file = out_rast_list.(0)
-      ;        ncols = compare_file.ncolumns
-      ;        nrows = compare_file.nrows
-      IF (result.ncolumns NE ncols OR result.nrows NE nrows) THEN BEGIN
-        ref_SpatialGridRaster = envispatialgridraster(envisubsetraster(compare_file, BANDS=1), GRID_DEFINITION = Grid)
-        obj_SpatialGridRaster = envispatialgridraster(result, GRID_DEFINITION = Grid)
-        result = envimetaspectralraster([obj_SpatialGridRaster], spatialref = obj_SpatialGridRaster.spatialref)
 
       ENDIF
+      
+      IF (resizeonmask EQ 1) THEN BEGIN
 
-    ENDIF
+        ; get the spatial extent from the mask
+        mask = e.openraster(out_files_list.LC_FILE)
+        UL = mask.spatialref.TIE_POINT_MAP
+        LR = [UL[0] + (mask.ncolumns-1)*mask.spatialref.PIXEL_SIZE[0],UL[1] - (mask.nrows-1)*mask.spatialref.PIXEL_SIZE[1]]
+        subset = envisubsetraster(result, SUB_RECT=[UL[0],LR[1],LR[0],UL[1]], SPATIALREF = mask.spatialref)
+        result = subset
+      ENDIF
 
-    IF (resizeonmask EQ 1) THEN BEGIN
+      
+      
+      ; add 8 to the reported acquisition DOYs --> done because usually the real DOYs are
+      ; in the last part of the period, so that when "substituting" real doy with theoretical
+      ; we get less "real" difference
 
       ;doys_required = fix(doys_required) + 8
 
@@ -274,57 +281,40 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
 ;      printf, LUN, resultHashJSON
 ;      free_lun, LUN
 
-    ; add 8 to the reported acquisition DOYs --> done because usually the real DOYs are
-    ; in the last part of the period, so that when "substituting" real doy with theoretical
-    ; we get less "real" difference
+       out_rast_list.(band) = result   ; Put the open virtual raster in the list of required rasters
 
-    doys_required = fix(doys_required) + 8
+      ; If not using META, then save the multitemporal file to disk
 
-    result.metadata.additem,    'Wavelength', doys_required
-    result.metadata.additem,    'time', times
-    result.metadata.updateitem, 'Band Names', in_bands_or[band] + "_" + yeardoys_required
+      IF (META EQ 0) THEN BEGIN
+        file_mkdir, file_dirname(OUT_NAME)
+        result.export, out_name, 'envi', interleave = opts.interleave, data_ignore_value = no_data
+        ; Cleanup - close open files
+        result.close
 
-    ;      resultHash     = result.dehydrate()
-    ;      resultHashJSON = json_serialize(resultHash)
-    ;      jsonFile       = out_files_list.(band)
-    ;      openw, LUN, jsonFile, /GET_LUN
-    ;      printf, LUN, resultHashJSON
-    ;      free_lun, LUN
+      ENDIF ELSE BEGIN
 
-    out_rast_list.(band) = result   ; Put the open virtual raster in the list of required rasters
+       ; TO BE DONE WHEN PASSING TO Service pack 1 !!!!
+        ; if META, store the multitemporal file in JSON virtual format
+        ; Don't close the fiules so that they are still there for Quality computation !
+        ;        resultHash = result.dehydrate()
+        ;        resultJSON = json_serialize(resultHash)
+        ;        jsonFile = out_name.remove(-3)+'json'
+        ;        openw, LUN, jsonFile, /GET_LUN
+        ;        printf, LUN, ndviJSON
+        ;        free_lun, LUN
 
-    ; If not using META, then save the multitemporal file to disk
+      ENDELSE
 
-    IF (META EQ 0) THEN BEGIN
-      file_mkdir, file_dirname(OUT_NAME)
-      result.export, out_name, 'envi', interleave = opts.interleave, data_ignore_value = no_data
-      ; Cleanup - close open files
-      result.close
+      ; clean up
+      FOREACH item, raster_list DO item.close
 
-    ENDIF ELSE BEGIN
+    ENDIF ELSE print, '# --- ' + in_bands_or[band] + ' File already existing ---- '; End of check on file existence
+  ENDFOR       ; End for cycle on band
 
-      ; TO BE DONE WHEN PASSING TO Service pack 1 !!!!
-      ; if META, store the multitemporal file in JSON virtual format
-      ; Don't close the fiules so that they are still there for Quality computation !
-      ;        resultHash = result.dehydrate()
-      ;        resultJSON = json_serialize(resultHash)
-      ;        jsonFile = out_name.remove(-3)+'json'
-      ;        openw, LUN, jsonFile, /GET_LUN
-      ;        printf, LUN, ndviJSON
-      ;        free_lun, LUN
-
-    ENDELSE
-
-    ; clean up
-    FOREACH item, raster_list DO item.close
-
-  ENDIF ELSE print, '# --- ' + in_bands_or[band] + ' File already existing ---- '; End of check on file existence
-ENDFOR       ; End for cycle on band
-
-;- --------------------------------------------------------- ;
-;  Create additional required files from the TS files created above (Quality file)
-; TODO: Parallelize this execution
-;- --------------------------------------------------------- ;
+  ;- --------------------------------------------------------- ;
+  ;  Create additional required files from the TS files created above (Quality file)
+  ; TODO: Parallelize this execution
+  ;- --------------------------------------------------------- ;
 
 ;  out_files_list.quality_file = path_create([in_ts_folder+path_sep()+strtrim(proc_year,2), $
 ;    "Quality"+'_ts_input_'+yeardoys_required[0]+'_'+yeardoys_required[-1]+'.dat'])
@@ -452,13 +442,13 @@ ENDFOR       ; End for cycle on band
 ;
 ;  ENDIF
 
-; Cleanup to close all open files
+  ; Cleanup to close all open files
 
-DataColl = e.data
-DataItems = DataColl.get()
-FOREACH item, DataItems DO item.close
-e.close
+  DataColl = e.data
+  DataItems = DataColl.get()
+  FOREACH item, DataItems DO item.close
+  e.close
 
-return, out_files_list
+  return, out_files_list
 
 END
