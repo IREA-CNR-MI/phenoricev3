@@ -45,11 +45,11 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
 
   ; Find the "minimum" doy to be considered for searching a Sowing Date
   vect_mins_pos = fix([opts.doy_1q[0],opts.doy_2q[0],opts.doy_3q[0],opts.doy_4q[0]])
-  min_pos = min(vect_mins_pos[where(opts.sel_seasons EQ 1)])
+  min_pos       = min(vect_mins_pos[where(opts.sel_seasons EQ 1)])
 
   ; Find the "maximum" doy to be considered for searching a Sowing Date
   vect_maxs_pos = fix([opts.doy_1q[1],opts.doy_2q[1],opts.doy_3q[1],opts.doy_4q[1]])
-  max_pos = max(vect_maxs_pos[where(opts.sel_seasons EQ 1)])
+  max_pos       = max(vect_maxs_pos[where(opts.sel_seasons EQ 1)])
 
   ;- --------------------------------------------------------- ;
   ;   On the basis of above identified ranges, define the bands required for the time series to be used for running Phenorice. To do that:
@@ -64,7 +64,7 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
   ; if min_doy < 0 it means that min_doy is on previous year, so recompute it as the complement to 365 and reset min_year to min_year -1
   IF (min_doy LT 0 ) THEN BEGIN
     min_year = proc_year - 1
-    min_doy = 365-abs(min_doy)
+    min_doy  = 365-abs(min_doy)
   ENDIF ELSE BEGIN
     min_year = proc_year
   ENDELSE
@@ -72,14 +72,14 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
   ; if max_doy > 365 it means that max_doy is on next year, so recompute it adding 365 and reset max_year to max_year+1
   IF (max_doy GT  365 ) THEN BEGIN
     max_year = proc_year + 1
-    max_doy = max_doy-365
+    max_doy  = max_doy-365
   ENDIF ELSE BEGIN
     max_year = proc_year
   ENDELSE
 
   ; Create an array containing the "MODIS ACQUISITION DOYS" and find to which "band" of the series the identified
   ; min and max doys correspond. To be sure to include all required bands, extend of 1 period on the left
-  doys_vect = string((indgen(46)*8 + 1),format = '(I3.3)')
+  doys_vect  = string((indgen(46)*8 + 1),format = '(I3.3)')
   min_period = min(where(doys_vect GT min_doy))-1
   max_period = min(where(doys_vect GT max_doy))
 
@@ -96,7 +96,7 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
 
   ; If some files of previous year AND some files from next year are needed
   IF ((min_year NE proc_year) AND (max_year NE proc_year)) THEN BEGIN
-    yeardoys_required =  [strtrim(string(proc_year-1),2)+'_'+strtrim(string(doys_vect [min_period : 45]),2), $
+    yeardoys_required = [strtrim(string(proc_year-1),2)+'_'+strtrim(string(doys_vect [min_period : 45]),2), $
       strtrim(string(proc_year),2)+'_'+strtrim(string(doys_vect [0 : 45]),2), $
       strtrim(string(proc_year+1),2)+'_'+strtrim(string(doys_vect [0 : max_period]),2)]
   ENDIF
@@ -110,7 +110,7 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
 
   ; If only files from current year are needed
   IF ((min_year EQ proc_year) AND (max_year EQ proc_year)) THEN BEGIN
-    yeardoys_required =  [strtrim(string(proc_year),2)+'_'+strtrim(string(doys_vect [min_period : max_period]),2)]
+    yeardoys_required = [strtrim(string(proc_year),2)+'_'+strtrim(string(doys_vect [min_period : max_period]),2)]
   ENDIF
 
   ;- -----------------------------------------------------------------------
