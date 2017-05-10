@@ -28,7 +28,7 @@ out_folder_gen = "/media/projects/ermes/datasets/rs_products/Phenology/Validatio
 dir.create(out_folder_gen, recursive = TRUE)
 out_folder = file.path(out_folder_gen, "GR")
 dir.create(out_folder, recursive = TRUE)
-Accessory_folder = file.path(out_folder_gen, 'Accessory')
+Accessory_folder = file.path(out_folder, 'Accessory')
 dir.create(Accessory_folder, recursive = TRUE)
 
 #Inizio calcoli -----

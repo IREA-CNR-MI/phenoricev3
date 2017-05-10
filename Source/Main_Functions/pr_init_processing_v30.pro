@@ -124,7 +124,7 @@ FUNCTION pr_init_processing_v30, in_files, opts, out_rast_list, ind_year
 
   nb_out = opts.n_rice + n_elements(where(opts.sel_seasons EQ 1)) * $
     (opts.max + opts.sow + opts.hh + opts.eos + $
-    opts.int + opts.maxvi + opts.minvi + opts.maxmin + opts.eosmin)
+    opts.int + opts.int_veg + opts.maxvi + opts.minvi + opts.maxmin + opts.eosmin)
 
   out_filename = in_files.out_filename
 
@@ -463,7 +463,8 @@ FUNCTION pr_init_processing_v30, in_files, opts, out_rast_list, ind_year
     'SOW', 'Doy of Sowing (SOS)', $
     'HH', 'Doy of Heading (FOS)', $
     'EOS', 'Doy of Harvest (EOS)', $
-    'INT', 'Cumulated EVI', $
+    'INT', 'Cumulated EVI- SOW to EOS', $
+    'INT_VEG', 'Cumulated EVI - SOW to MAX', $
     'MAXVI', 'Maximum EVI', $
     'MINVI', 'Minimum EVI', $
     'MAXMIN', 'Length of Vegetative Season (SOS to FOS)', $

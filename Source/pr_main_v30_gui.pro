@@ -57,7 +57,7 @@
   META           = 1             ; Specify if saving input multitemporal files or just use "virtual" in-memory files
   ; referring to the input single-data - avoids creating huge "physical" input files !
 
-  force_rebuild  = 1             ; Flag. if set to 1 the input files are rebuilt (overwritten) even if already existing
+  force_rebuild  = 0             ; Flag. if set to 1 the input files are rebuilt (overwritten) even if already existing
   force_resmooth = 1             ; Flag. if set to 1 the smoothed file is rebuilt (overwritten) even if already existing
   overwrite_out  = 1             ; If = 0, then trying to overwrite existing outputs is NOT POSSIBLE
   fullout        = 1             ; Specify if also building an output file containing all bands - obsolete !
@@ -79,7 +79,7 @@
 
   ; Nodata values used in MODIStsp for the different parameters
 
-  nodatas_or = [32767,32767,32767,32767,255,255,32767,32767]
+  nodatas_or = [32767,32767,32767,255,255,32767,32767]
 
   ; If mapscape inputs are used, NODATA values for Surf_Temp are different ! To be changed in mapscape !!
   IF mapscape EQ 1 THEN  nodatas_or = [-3000,32767,-1000,-1,255,255,-1,0]
@@ -165,6 +165,7 @@
       hh             : 1, $   ; DOY of flowering (midpoint EVI Z 90th perc.)
       eos            : 1, $   ; EOS (decrease 50 %)
       int            : 1, $   ; Cumulated EVI between min and flowering
+      int_veg        : 1, $   ; Cumulated EVI between min and flowering
       maxvi          : 0, $   ; EVI at maximum
       minvi          : 0, $   ; EVI at minimum
       maxmin         : 1, $   ; Length of vegetative season
@@ -347,6 +348,7 @@
       hh             : 1, $   ; DOY of flowering (midpoint EVI Z 90th perc.)
       eos            : 1, $   ; EOS (decrease 50 %)
       int            : 1, $   ; Cumulated EVI between min and flowering
+      int_veg        : 1, $   ; Cumulated EVI between min and flowering
       maxvi          : 0, $   ; EVI at maximum
       minvi          : 0, $   ; EVI at minimum
       maxmin         : 1, $   ; Length of vegetative season
