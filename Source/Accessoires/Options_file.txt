@@ -1,7 +1,7 @@
-/home/lb/phenorice/RedRiver/Input
-/home/lb/phenorice/RedRiver/Output
-/home/lb/phenorice/RedRiver/Ancillary/Mask_Water_RR.dat
-/home/lb/phenorice/RedRiver/input_pr
+z:/phenorice/RedRiver/Input
+z:/lb/phenorice/RedRiver/Output2
+z:/phenorice/RedRiver/Ancillary/Mask_Water_RR.dat
+z:/phenorice/RedRiver/input_pr2
 On
 15
 30
@@ -46,7 +46,7 @@ On
 90
 On
 30
-66
+50
 On
 15
 On
