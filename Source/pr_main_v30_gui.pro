@@ -28,7 +28,7 @@
   debug          = 0            ; Specify if using "standard" processing for debug purposes.
                               ; If set to 1, parallel processing is not used so that the debug is easier
   resizeonmask   = 0
-  test_data      =  0        ; Leads to using default input data and parameters (for testing purposes)
+  test_data      = 0        ; Leads to using default input data and parameters (for testing purposes)
   test_folder    = '/home/lb/Temp/PHL_Clipped/'  ; testing data folder
   mapscape       = 0             ; Specify to use "mapscape-like" input files --> Leads to changes in NODATA values and (possibly)
   
@@ -69,16 +69,16 @@
   ; Used in the phase of building the "short" time series using pr_build_inputs
   ; The first item indicate whether to use EVI or NDVI -> Change: Removed NDII7 since it's useless !
 
-  in_bands_or = ['EVI','NDFI','b3_Blue','Rely','UI','DOY','LST']
+  in_bands_or = ['EVI','NDFI','b3_Blue','Rely','QA_usef','DOY','LST_Day_1km']
 
   ; Folders where MODIStsp stores the different parameters - do not touch !
 
-  folder_suffixes_or = ['VI_16Days_250m_v5','VI_16Days_250m_v5','VI_16Days_250m_v5','VI_16Days_250m_v5', $
-    'VI_16Days_250m_v5','VI_16Days_250m_v5','Surf_Temp_8Days_1Km_v5']
+  folder_suffixes_or = ['VI_16Days_250m_v6','VI_16Days_250m_v6','VI_16Days_250m_v6','VI_16Days_250m_v6', $
+    'VI_16Days_250m_v6','VI_16Days_250m_v6','Surf_Temp_8Days_1Km_v6']
 
   ; Nodata values used in MODIStsp for the different parameters
 
-  nodatas_or = [32767,32767,32767,255,255,32767,32767]
+  nodatas_or = [32767,32767,32767,32767,255,255,32767,65535]
 
   ; If mapscape inputs are used, NODATA values for Surf_Temp are different ! To be changed in mapscape !!
   IF mapscape EQ 1 THEN  nodatas_or = [-3000,32767,-1000,-1,255,255,-1,0]

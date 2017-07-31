@@ -16,8 +16,8 @@ general_opts = list(in_folder = '', out_folder = '', mask_file = '', tempin_fold
 										maxth_check = 'On',maxth_thresh = 4000, vi_decr_thresh = 0.55, #vi_decr_width = 8*10, #vi_decr_check = 'On',
 										minth_check = 'On',minth_thresh = 2500,
 										flood_check = 'On', flood_wid = '16',
-										lgt_check = 'On', lgtlow = 40, lgtup = 90,
-										maxeos_check = 'On', maxeoslow = 30, maxeosup = 50,
+										lgt_check = 'On', lgtlow = 40, lgtup = 120,
+										maxeos_check = 'On', maxeoslow = 30, maxeosup = 80,
 										lst_check = 'On' ,lst_thresh = 15,
 										shape_check = 'On' ,shape_meth = 1, shape_thresh = 0.9, 
 										IDL_exe = '"C:/Program Files/Exelis/IDL82/bin/bin.x86_64/idl.exe"',
@@ -209,17 +209,17 @@ flood_check = gradio(items = c('On','Off'), text = 'Select', container=flood_gro
 
 lgt_group <- ggroup(horizontal = TRUE, container=criteria_group)  				# Main group
 lgt_lab <- glabel(text = 'Vegetative Season Length -   Min: ', justify = "right" , container=lgt_group, width = 8)
-lgtlow_wid <- gspinbutton(from = 30, to = 90, by = 8, container=lgt_group,horizontal =F, width = 30, value = general_opts$lgtlow )
+lgtlow_wid <- gspinbutton(from = 30, to = 120, by = 8, container=lgt_group,horizontal =F, width = 30, value = general_opts$lgtlow )
 lgt_lab <- glabel(text = ' Max: ', justify = "right" , container=lgt_group, width = 8)
-lgtup_wid <- gspinbutton(from = 30, to = 90, by = 8, container=lgt_group,horizontal =F, width = 30 , value = general_opts$lgtup )
+lgtup_wid <- gspinbutton(from = 30, to = 120, by = 8, container=lgt_group,horizontal =F, width = 30 , value = general_opts$lgtup )
 addSpring(lgt_group)
 lgt_check = gradio(items = c('On','Off'), text = 'Select', container=lgt_group, selected = match(general_opts$lgt_check, c('On','Off')), horizontal = T)
 
 maxeos_group <- ggroup(horizontal = TRUE, container=criteria_group)  				# Main group
 maxeos_lab <- glabel(text = 'Maturity to Harvest Length - Min: ', justify = "right" , container=maxeos_group, width = 8)
-maxeoslow_wid <- gspinbutton(from = 25, to = 90, by = 8, container=maxeos_group,horizontal =F, width = 30, value = general_opts$maxeoslow )
+maxeoslow_wid <- gspinbutton(from = 25, to = 120, by = 8, container=maxeos_group,horizontal =F, width = 30, value = general_opts$maxeoslow )
 maxeos_lab <- glabel(text = ' Max: ', justify = "right" , container=maxeos_group, width = 8)
-maxeosup_wid <- gspinbutton(from = 25, to = 90, by = 8, container=maxeos_group,horizontal =F, width = 30 , value = general_opts$maxeosup )
+maxeosup_wid <- gspinbutton(from = 25, to = 120, by = 8, container=maxeos_group,horizontal =F, width = 30 , value = general_opts$maxeosup )
 vi_decr_lab <- glabel(text = '% of decrease to EOS :', justify = "right" , container=maxeos_group, maxeos_group = 8)
 vi_decr_wid <- gedit(text = format(general_opts$vi_decr_thresh, justify = "right") , container=maxeos_group, width = 8)
 addSpring(maxeos_group)

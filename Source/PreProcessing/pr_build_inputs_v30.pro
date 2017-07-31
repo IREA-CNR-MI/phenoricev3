@@ -177,7 +177,7 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
 
         IF count_files EQ 1 THEN BEGIN ; if exists, get its filename and put it in the list of required files
 
-          in_files_required [index_files] = in_files[result]
+          in_files_required[index_files] = in_files[result]
 
         ENDIF ELSE BEGIN   ; If file doesn't exist, build an "average" filler file to be used to fill the series !
 
