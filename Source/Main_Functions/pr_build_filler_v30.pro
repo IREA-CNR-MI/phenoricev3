@@ -25,9 +25,11 @@ PRO pr_build_filler_v30, avail_years_files, no_data, in_band, out_name_filler,e,
   
   ; Do a check on the difference between reported DOY and theoric doy - needed to 
   ; avoid problems on averages computation for the last image of the year
+  ; THIS HAS TO BE DONE ONLY IF WE ARE FILLING THE DOY IMAGE !!!!
+  if (in_band EQ "DOY") then begin
   dove_bigdiff = where(abs(or_data - doy_reg) GT 18) 
   or_data[dove_bigdiff] = or_data[dove_bigdiff] + 365  ; Substiute "wrong" doys ! 
-  
+  ENDIF
   
   avg_data = mean(or_data, dimension=3, /Nan)    ; Compute average
   dove_na_avg = where(finite(avg_data) EQ 0, na_avg_cnt)   ; Where infinite, set to NA
