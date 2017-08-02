@@ -1,0 +1,142 @@
+---
+title: "Processing passages"
+output: 
+  html_document: 
+    highlight: haddock
+    theme: cosmo
+    toc: yes
+    toc_depth: 2
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(sprawl)
+library(ggplot2)
+```
+
+Here I am going to document the passages required to extract data from PhenoRice mosaics
+so that they can be more easily analyzed.
+
+## Preprocessing
+
+### Rename the yearly mosaics
+
+Simple renaming of the mosaics prepared by Andy to give them more "meaningful" names
+
+```{r eval = FALSE}
+# Just define the folder containing s1_2003.tif, s2_2003.tif, etcetera and run 
+# `rename_year_mosaics
+ mosaics_folder <- "/home/lb/my_data/prasia/mosaics/by_year/2017-07-22/"
+ out_folder     <- "/home/lb/my_data/prasia/mosaics/by_year"
+ rename_year_mosaics(mosaics_folder, out_folder)
+```
+
+### Create single files containing time series for each parameter
+
+Build multi-band files containing the full time series for each PhenoRice output of interest
+to facilitate access to data
+
+```{r eval = FALSE}
+# Folder containing the mosaics by year and parameter (e.g., sos_1_2016, sos_2_2016, etc)
+# # Note we are using the "renamed" ones obtained after applying "rename_year_mosaics"
+mosaics_folder <- "/home/lb/my_data/prasia/mosaics/by_year/"
+outfold        <- "/home/lb/my_data/prasia/mosaics/ordered"
+patterns       <- c("sos", "eos", "pos", "cumevi", "veglgt", "totlgt", "nseas")
+create_ordered_tiffs(mosaics_folder, patterns, out_folder )
+```
+
+## Automatic subsetting and masking on regions of interest
+
+To speed-up things, its better to prototype the analysis on selected areas, and then extend it. 
+Therefore, here is a way to easily extract and mask the data on a region of interest: 
+
+```{r eval = FALSE}
+#   ____________________________________________________________________________
+#   set input and output folders                                            ####
+
+mosaic_folder  <- "/home/lb/my_data/prasia/mosaics/ordered"
+subsets_folder <- "/home/lb/my_data/prasia/mosaics/ordered/subsets"
+
+#   ____________________________________________________________________________
+#   define subsetting area: choose a country                  ####
+
+subset_name <- "PHL"
+in_country  <- "PHL"
+boundmask   <- sprawl::get_boundaries(in_country, level = 1) %>%
+  sf::st_as_sf() %>% 
+  sf::st_combine() 
+ggplot(boundmask) + geom_sf() + theme_bw() 
+
+# It's also possible to mask directly on a "province":
+
+subset_name <- "Nueva_Ecija"
+in_country  <- "PHL"
+boundmask   <- sprawl::get_boundaries(in_country, level = 1) %>%
+  sf::st_as_sf() %>%
+  dplyr::filter(NAME_1 == "Nueva Ecija") %>%
+  sf::st_combine()
+
+extract_subarea(mosaic_folder,
+                boundmask,
+                subset_name,
+                out_folder  = subsets_folder)
+```
+
+
+Now, in "out_folder/subsets/subsets_name" we have the "ordered" phenorice tiffs, subsetted
+and masked on the region of interest. We can work starting from that folder, now. 
+
+Let's see some quick plots: 
+
+```{r}
+subsets_folder <- "/home/lb/my_data/prasia/mosaics/ordered/subsets"
+sosfile <- get(load(file.path(subsets_folder, "Nueva_Ecija", "sos.RData")))
+# find the bands of "s2" season
+which_s2 <- which(regexpr("_s2", names(sosfile)) != -1)
+sprawl::plot_rast(sosfile[[which_s2]], 
+                  title = "SOS doy - Season 2 - Nueva Ecija")
+
+eosfile <- get(load(file.path(subsets_folder, "Nueva_Ecija", "eos.RData")))
+sprawl::plot_rast(eosfile[[which_s2]], 
+                  title = "EOS doy- Season 2 - Nueva Ecija")
+
+lgtfile <- get(load(file.path(subsets_folder, "Nueva_Ecija", "veglgt.RData")))
+sprawl::plot_rast(lgtfile[[which_s2]], 
+                  title = "Length vegetative season - Season 2 - Nueva Ecija", 
+                  limits = c(50, 80))
+
+```
+
+## Extract data in an "analysis friendly" format
+
+The format of the sos, eos and pos parameters makes it difficult to further analyze them
+because: 
+
+1. they use DOY, which is a "circular" variable which is difficult to use in any statistical
+analysis. To further add to this problem, in PhenoRice outputs we can have both positive and 
+negative doys (at least in s1), and doys >365 (at least in s4); 
+2. data is "artificially" subdivided in the 4 "seasons" specified in PhenoRice processing. 
+This subdivision doesn't make any sense from an "agronomic" point of view: we need to be 
+able to "collapse" all data for a given area into a **single time series of event occurrence** 
+(sos, pos or eos) covering the 14 years of analysis, on which we can later make statistical analysis. 
+
+To do so: 
+
+### "Decircularize" the doy-year information 
+
+By "decircularize" I mean going from the DOY representation to a Julian Date representation, 
+which has the advantage of being a continouos monotonically increasing variable. 
+
+sos, eos and pos dates are therefore here converted to a numeric variable representing the
+number of days elapsed since 01/01/2000. (Note however that it is always possible to go back 
+to the date by simply "adding" the values reported to the raster to 01/01/2000)
+
+(This passage is very slow on the full mosaics because I didn't have time yet to optimize 
+it, but since we need to do it only once we can live with it for the mkoment. Moreover, when
+working on subsets it is reasonably fast, so I'll stay like this at the moment)
+
+```{r eval = FALSE}
+in_folder  <- "/home/lb/my_data/prasia/mosaics/ordered/subsets/Nueva_Ecija"
+out_folder <- file.path(in_folder, "decirc")
+decirc_phenorice(in_folder, out_folder)
+```
