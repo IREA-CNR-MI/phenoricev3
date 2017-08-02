@@ -48,7 +48,10 @@ create_ordered_tiffs(mosaics_folder, patterns, out_folder )
 ## Automatic subsetting and masking on regions of interest
 
 To speed-up things, its better to prototype the analysis on selected areas, and then extend it. 
-Therefore, here is a way to easily extract and mask the data on a region of interest: 
+Therefore, here is a way to easily extract and mask the data on a region of interest. Note that
+this is heavily parallelized: using a PC with many cores will speed-up things considerably (
+there is an hard-coded limit to 8 cores at the moment, but I could remove it). On my PC, which is 
+not particularly fast, extracting all the PHL data takes about 1 hour. 
 
 ```{r eval = FALSE}
 #   ____________________________________________________________________________
@@ -64,8 +67,9 @@ subset_name <- "PHL"
 in_country  <- "PHL"
 boundmask   <- sprawl::get_boundaries(in_country, level = 1) %>%
   sf::st_as_sf() %>% 
-  sf::st_combine() 
-ggplot(boundmask) + geom_sf() + theme_bw() 
+  sf::st_combine() %>%
+  sf::st_sf(id = 1, sf_column_name = ".") 
+
 
 # It's also possible to mask directly on a "province":
 
