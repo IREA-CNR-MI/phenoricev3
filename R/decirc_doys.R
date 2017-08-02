@@ -25,6 +25,8 @@
 decirc_phenorice <- function(in_folder, out_folder){
 
   dir.create(out_folder, recursive = TRUE, showWarnings = FALSE)
+  tmp_folder <- file.path(out_folder, "tmp")
+  dir.create(tmp_folder, recursive = TRUE, showWarnings = FALSE)
   #   ____________________________________________________________________________
   #   compute decircularized single bands (using the full files is very slow  ####
   #   on the full mosaics, so create single bands and then aggregate later
@@ -44,7 +46,7 @@ decirc_phenorice <- function(in_folder, out_folder){
     in_rast <- raster::setZ(in_rast, years)
     for (yy in seq_along(years)) {
       message(in_var, "band - ", yy)
-      out_file  <- file.path(out_folder,
+      out_file  <- file.path(tmp_folder,
                              paste(in_var, sprintf("%03i", yy), "decirc.tif", sep = "_"))
       diffdays  <- as.numeric(years[yy] - as.Date("2000-01-01"))
       raster::calc(in_rast[[yy]],
@@ -52,26 +54,28 @@ decirc_phenorice <- function(in_folder, out_folder){
                    filename = out_file,
                    ot = "UInt16",
                    options = "COMPRESS=DEFLATE",
-                   overwrite = TRUE)
+                   overwrite = TRUE,
+                   NAflag = 32767)
     }
 
 
     #   ____________________________________________________________________________
     #   join the bands in multiband and remove single bands                     ####
-    in_files <- list.files(out_folder, pattern = in_var, full.names = TRUE)
+    in_files <- list.files(tmp_folder, pattern = in_var, full.names = TRUE)
     out_file <- file.path(out_folder, paste0(in_var, "_decirc.tif"))
     temp_vrt <- tempfile(fileext = ".vrt")
 
     gdalUtils::gdalbuildvrt(in_files,
                             temp_vrt,
-                            separate = T)
+                            separate = T, vrtnodata = 32767)
 
     gdalUtils::gdal_translate(temp_vrt,
                               out_file,
                               ot = "UInt16",
                               options = "COMPRESS=DEFLATE",
                               separate = T,
-                              overwrit = TRUE)
+                              overwrit = TRUE,
+                              a_nodata = 32767)
 
     unlink(in_files)
 
