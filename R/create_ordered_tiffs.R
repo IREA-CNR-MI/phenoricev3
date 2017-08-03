@@ -7,9 +7,12 @@
 #' @details DETAILS
 #' @examples
 #' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
+#'  # # Folder containing the mosaics by year and parameter (e.g., sos_1_2016, sos_2_2016, etc)
+#   # Note we are using the "renamed" ones obtained after applying "rename_year_mosaics"
+#   mosaics_folder <- "/home/lb/nr_working/shared/PhenoRice/Asia/Data/mosaics/by_year/"
+#   outfold <- "home/lb/nr_working/shared/PhenoRice/Asia/Data/mosaics/by_year/ordered"
+#   patterns <- c("sos", "eos", "pos", "cumevi", "veglgt", "totlgt", "nseas")
+#   create_ordered_tiffs(mosaics_folder,patterns,out_fold)
 #' }
 #' @rdname create_ordered_tiffs
 #' @export
@@ -30,8 +33,8 @@ create_ordered_tiffs <- function(mosaics_folder,
     create_vrt_mosaics(mosaics_folder, pattern)
   }
   vrts    <- list.files(mosaics_folder, pattern = ".vrt", full.names = T)
-  ncores <- 4
-  clust <- parallel::makeCluster(ncores, outfile = " ")
+  ncores  <- 4
+  clust   <- parallel::makeCluster(ncores, outfile = " ")
   doSNOW::registerDoSNOW(clust)
 
   out <- foreach(

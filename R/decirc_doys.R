@@ -12,9 +12,9 @@
 #'   is (reasonably) fast.
 #' @examples
 #' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
+#'   in_folder  <- "/home/lb/my_data/prasia/mosaics/ordered/subsets/Nueva_Ecijia/"
+#'   out_folder <- file.path(in_folder, "decirc")
+#'   decirc_phenorice(in_folder, out_folder)
 #' }
 #' @rdname decirc_phenorice
 #' @export
@@ -42,7 +42,7 @@ decirc_phenorice <- function(in_folder, out_folder){
                             paste(sort(rep(seq(2003, 2016, 1), 4)),
                                   c("s1","s2","s3","s4"), sep = "_"),
                             sep = "_")
-    years <- as.Date(paste(sort(rep(seq(2003, 2016, 1), 4)),"-01-01", sep = ""))
+    years   <- as.Date(paste(sort(rep(seq(2003, 2016, 1), 4)),"-01-01", sep = ""))
     in_rast <- raster::setZ(in_rast, years)
     for (yy in seq_along(years)) {
       message(in_var, "band - ", yy)
@@ -91,10 +91,3 @@ decirc_phenorice <- function(in_folder, out_folder){
     save(out_rast, file = paste0(tools::file_path_sans_ext(out_file), ".RData"))
   }
 }
-
-# in_folder  <- "/home/lb/my_data/prasia/mosaics/ordered/subsets/Nueva_Ecijia/"
-# out_folder <- file.path(in_folder, "decirc")
-# dir.create(out_folder)
-# decirc_phenorice(in_folder, out_folder)
-
-
