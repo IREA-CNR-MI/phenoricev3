@@ -83,6 +83,8 @@ boundmask   <- sprawl::get_boundaries(in_country, level = 1) %>%
   dplyr::filter(NAME_1 == "Nueva Ecija") %>% 
   sf::st_as_sf()
 
+# boundmask <- sf::st_transform(boundmask, get_projstring("/home/lb/my_data/prasia/mosaics/ordered/decirc/sos_02_decirc.tif"))
+
 extract_subarea(mosaic_folder,
                 boundmask,
                 subset_name,

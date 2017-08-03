@@ -1,3 +1,33 @@
+#' @title FUNCTION_TITLE
+#' @description FUNCTION_DESCRIPTION
+#' @param in_mosaics_folder PARAM_DESCRIPTION
+#' @param in_mask PARAM_DESCRIPTION
+#' @param subset_name PARAM_DESCRIPTION
+#' @param out_folder PARAM_DESCRIPTION
+#' @return OUTPUT_DESCRIPTION
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#'  mosaic_folder <- "/home/lb/my_data/prasia/mosaics/ordered"
+#'  out_folder  <- "/home/lb/my_data/prasia/mosaics/ordered/subsets/"
+#'  subset_name <- "Nueva_Ecija"
+#'  in_country  <- "PHL"
+#'  boundmask   <- sprawl::get_boundaries(in_country, level = 1) %>%
+#'  sf::st_as_sf() %>%
+#'  dplyr::filter(NAME_1 == "Nueva Ecija") %>%
+#'  sf::st_combine()
+#'  extract_subarea(mosaic_folder,
+#'                 boundmask,
+#'                 subset_name,
+#'                 out_folder)
+#'  }
+#' @rdname extract_subarea
+#' @export
+#' @author Lorenzo Busetto, phD (2017) <lbusett@gmail.com>
+#' @importFrom raster stack setZ
+#' @importFrom sprawl mask_rast
+#' @importFrom stringr str_split_fixed
+#'
 extract_subarea <- function(in_mosaics_folder,
                             in_mask,
                             subset_name,
@@ -22,10 +52,9 @@ extract_subarea <- function(in_mosaics_folder,
         in_vars[file],
         paste(sort(rep(seq(2003, 2016, 1), 4)), c("s1","s2","s3","s4"), sep = "_"),
         sep = "_")
-      in_rast <- raster::setZ(
-        in_rast, as.Date(paste(sort(rep(
-          seq(2003, 2016, 1), 4)),
-          "-01-01", sep = "")))
+      in_rast <- raster::setZ(in_rast,
+                              as.Date(paste(sort(rep(seq(2003, 2016, 1), 4)),"-01-01",
+                                            sep = "")))
     }
 
     out_tiff  <- file.path(out_folder, subset_name, paste0(in_vars[file], ".tif"))
@@ -37,6 +66,9 @@ extract_subarea <- function(in_mosaics_folder,
                                    out_rast  = out_tiff,
                                    crop      = TRUE,
                                    overwrite = TRUE)
+    out_rast_full <- raster::stack(out_tiff)
+    names(out_rast_full) <- names(out_rast)
+    out_rast_full <- raster::setZ(out_rast_full, raster::getZ(out_rast))
     save(out_rast, file = out_RData)
   }
 }
