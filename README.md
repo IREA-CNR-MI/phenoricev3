@@ -3,7 +3,7 @@
 phenoriceR
 ==========
 
-The goal of phenoriceR is to ...
+The goal of phenoriceR is to collect scripts for postProcessing of PhenoRice result, as well as to document the processing steps and share ideas and comments.
 
 Installation
 ------------

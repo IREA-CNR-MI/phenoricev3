@@ -144,7 +144,7 @@ to the date by simply "adding" the values reported to the raster to 01/01/2000)
 it, but since we need to do it only once we can live with it for the mkoment. Moreover, when
 working on smaller subsets it is reasonably fast, so I'll stay like this at the moment)
 
-```{r eval = FALSE, message=FALSE, warning=FALSE}
+```{r message=FALSE, warning=FALSE}
 in_folder  <- "/home/lb/my_data/prasia/mosaics/ordered/subsets/Nueva_Ecija"
 out_folder <- file.path(in_folder, "decirc")
 decirc_phenorice(in_folder, out_folder)
@@ -153,9 +153,9 @@ decirc_phenorice(in_folder, out_folder)
 Let'see what we get inside the decircularized data: 
 
 ```{r, message=FALSE, warning=FALSE}
-insos_decirc <- raster::stack(
-  "/home/lb/my_data/prasia/mosaics/ordered/subsets/Nueva_Ecija/decirc/sos_decirc.tif"
-)
+insos_decirc <- get(load(
+  "/home/lb/my_data/prasia/mosaics/ordered/subsets/Nueva_Ecija/decirc/sos_decirc.RData"
+))
 summary(insos_decirc[[1:8]])
 ```
 

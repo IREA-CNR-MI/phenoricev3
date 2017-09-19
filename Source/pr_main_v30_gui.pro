@@ -25,7 +25,7 @@
   ; Set some options for test processing
   ;- --------------------------------------------------------- ;
   
-  debug          = 1            ; Specify if using "standard" processing for debug purposes.
+  debug          = 0          ; Specify if using "standard" processing for debug purposes.
                               ; If set to 1, parallel processing is not used so that the debug is easier
   resizeonmask   = 1
   test_data      = 0        ; Leads to using default input data and parameters (for testing purposes)
@@ -49,7 +49,7 @@
   ;- --------------------------------------------------------- ;
 
   ncpus          = !CPU.hw_ncpu - 1 ; Find number of available cores - KEEP ONE FREE TO AVOID OVERLOAD !!!!!
-  ncpus          = 10 ; Find number of available cores - KEEP ONE FREE TO AVOID OVERLOAD !!!!!
+;  ncpus          = 10 ; Find number of available cores - KEEP ONE FREE TO AVOID OVERLOAD !!!!!
   method         = 'parallel-line'; Processing method *"parallel-line" (faster - difficult to debug ! ))
   chunksize      = 50             ; Number of lines to assign to each core: the higher, the fastest, but the
   ; highest also the memory load !
@@ -75,7 +75,7 @@
   ; Folders where MODIStsp stores the different parameters - do not touch !
 
   folder_suffixes_or = ['VI_16Days_250m_v5','VI_16Days_250m_v5','VI_16Days_250m_v5','VI_16Days_250m_v5', $
-    'VI_16Days_250m_v5','VI_16Days_250m_v5','Surf_Temp_8Days_1Km_v5']
+    'VI_16Days_250m_v5','VI_16Days_250m_v5','Surf_Temp_8Days_1Km_v6']
 
   ; Nodata values used in MODIStsp for the different parameters
 
