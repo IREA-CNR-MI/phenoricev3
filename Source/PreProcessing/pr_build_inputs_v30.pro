@@ -37,6 +37,7 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
   e = envi(/HEADLESS)         ; Start envi in batch mode
   proc_year = opts.proc_year  ; get processing year
 
+
   ;- --------------------------------------------------------- ;
   ;-  Set processing parameters and general variables
   ;- --------------------------------------------------------- ;
@@ -150,10 +151,11 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
 
     ;    IF META THEN out_name = out_name.remove(-3)+'json'   ; If META, save a virtual raster as a json file !
     out_files_list.(band) = out_name
+    
 
     ; Check if already existing. If no, then create it using the MODIStsp inputs + creating fillers
 
-    IF ((file_test(out_name)) EQ 0 OR (force_rebuild EQ 1)) THEN BEGIN
+    IF ((file_test(out_name) EQ 0) OR (force_rebuild EQ 1)) THEN BEGIN
 
       file_delete, out_name, /ALLOW_NONEXISTENT
       file_delete,(out_name.remove(-3)+'hdr'),/ALLOW_NONEXISTENT
@@ -169,6 +171,13 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
 
       FOREACH yeardoy, yeardoys_required, index_files DO BEGIN
 
+        IF index_files EQ 0 AND band EQ 0 THEN begin
+          cfile = in_files[0]
+          compare_file = e.openraster(cfile[0])
+          nrows = compare_file.nrows
+          ncols = compare_file.ncolumns
+        ENDIF
+
         ; Check if required file exists
         result = where(strmatch(in_files, '*'+yeardoy+'*\.dat'), count_files)
 
@@ -176,11 +185,13 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
 
           in_files_required [index_files] = in_files[result]
 
+
         ENDIF ELSE BEGIN   ; If file doesn't exist, build an "average" filler file to be used to fill the series !
 
           out_name_filler = in_ts_folder+path_sep()+'ph_Fillers'+path_sep()+'AvgFiller'+'_'+ $
             in_bands_or[band]+'_'+yeardoy+'.dat'
           IF ((file_test(out_name_filler) EQ 0) OR (force_rebuild EQ 1)) THEN BEGIN   ; If required filler doesn't exist, then create it
+            FILE_MKDIR, FILE_DIRNAME(out_name_filler)
             doy = strmid(yeardoy, 2, /REVERSE_OFFSET)
             print, 'Computing Filler file for DOY'+string(doy)
             doy_positions = where(doys EQ doy, count_doys)
@@ -192,13 +203,19 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
             ENDIF ELSE BEGIN
               avail_years_files = in_files [doy_positions]   ; Get the files of previous years acquired in the same doy
               ; Launch build_filler to create an average file for the missing DOY
-              pr_build_filler_v30, avail_years_files, no_data, in_bands_or[band], out_name_filler
+              IF (file_test(out_name_filler) EQ 0 OR (force_rebuild EQ 1)) THEN BEGIN
+                compare_file = e.openraster(cfile[0])
+                pr_build_filler_v30, avail_years_files, no_data, in_bands_or[band], out_name_filler, e, compare_file
+              ENDIF ELSE BEGIN
+                print, "Filler file already existing - skipping"
+              ENDELSE
+
             ENDELSE
           ENDIF
           in_files_required [index_files]  =  out_name_filler  ; Put tout_rast_list.doy_filehe filler filename in the correct position of the input files list
 
         ENDELSE ; end else on existance of required file
-
+        
       ENDFOREACH ; end foreach on searching required files
 
       ;--------------------------------------------------------
@@ -215,40 +232,48 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
         date = yeardoys_required[file_ind]
         time = envitime(ACQUISITION = doy2date(fix(strmid(strtrim(date, 2), 5, 3)), fix(strmid(strtrim(date, 2), 0, 4)))+"T00:00:00Z")
         times[file_ind] = time.acquisition
-
-        IF file_ind EQ 0 THEN BEGIN
-          raster_list = e.openraster(file)
-          IF (raster_list.metadata.hastag ('time')) THEN raster_list.metadata.updateitem, 'time', time.acquisition $
-          ELSE raster_list.metadata.additem,'time', time.acquisition
+        raster = e.openraster(file)
+        sz = size(nrows)
+        if sz[0] EQ 0 then begin
+          compare_file = e.openraster(cfile[0])
+          nrows = compare_file.nrows
+          ncols = compare_file.ncolumns
+        endif
+        IF (raster.ncolumns NE ncols OR raster.nrows NE nrows) THEN BEGIN
+          ref_SpatialGridRaster = envispatialgridraster(envisubsetraster(compare_file, BANDS=0), GRID_DEFINITION = Grid)
+          obj_SpatialGridRaster = envispatialgridraster(raster, GRID_DEFINITION = Grid)
+          raster                = envimetaspectralraster([obj_SpatialGridRaster], spatialref = obj_SpatialGridRaster.spatialref)
+        ENDIF
+        IF (raster.metadata.hastag ('time')) THEN begin
+          raster.metadata.updateitem, 'time', time.acquisition
         ENDIF ELSE BEGIN
-          raster = e.openraster(file)
-          IF (raster.metadata.hastag ('time')) THEN raster.metadata.updateitem, 'time', time.acquisition ELSE raster.metadata.additem,'time', time.acquisition
-          raster_list = [raster_list, raster]
+          raster.metadata.additem,'time', time.acquisition
         ENDELSE
 
+        IF file_ind EQ 0 THEN raster_list = raster ELSE raster_list = [raster_list, raster]
       ENDFOREACH
 
       ; Create multiband file using the single date rasters
       result = envimetaspectralraster(raster_list, spatialref = raster.spatialref)
-     
+
       ; on LST input, check the dimensions. If not equal to other files do a quick layer stack
       ;(needed because MODIStsp LST output may have slightly different dimensions from the other
       ; bands !
 
-      IF (band EQ 6) THEN BEGIN
+      IF (band NE 0) THEN BEGIN
 
-        IF META THEN  compare_file = out_rast_list.(0) ELSE compare_file = out_rast_list.(0)
-        ncols = compare_file.ncolumns
-        nrows = compare_file.nrows
+        ;        IF META THEN  compare_file = out_rast_list.(0) ELSE compare_file = out_rast_list.(0)
+        ;        ncols = compare_file.ncolumns
+        ;        nrows = compare_file.nrows
         IF (result.ncolumns NE ncols OR result.nrows NE nrows) THEN BEGIN
           ref_SpatialGridRaster = envispatialgridraster(envisubsetraster(compare_file, BANDS=1), GRID_DEFINITION = Grid)
           obj_SpatialGridRaster = envispatialgridraster(result, GRID_DEFINITION = Grid)
           result = envimetaspectralraster([obj_SpatialGridRaster], spatialref = obj_SpatialGridRaster.spatialref)
-          
+
         ENDIF
 
       ENDIF
-      
+
       IF (resizeonmask EQ 1) THEN BEGIN
 
         ; get the spatial extent from the mask
@@ -259,8 +284,8 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
         result = subset
       ENDIF
 
-      
-      
+
+
       ; add 8 to the reported acquisition DOYs --> done because usually the real DOYs are
       ; in the last part of the period, so that when "substituting" real doy with theoretical
       ; we get less "real" difference
@@ -274,14 +299,14 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
       SAVE, times, doys_required, yeardoys_required, save_var, FILENAME = save_var
 
 
-;      resultHash     = result.dehydrate()
-;      resultHashJSON = json_serialize(resultHash)
-;      jsonFile       = out_files_list.(band)
-;      openw, LUN, jsonFile, /GET_LUN
-;      printf, LUN, resultHashJSON
-;      free_lun, LUN
+      ;      resultHash     = result.dehydrate()
+      ;      resultHashJSON = json_serialize(resultHash)
+      ;      jsonFile       = out_files_list.(band)
+      ;      openw, LUN, jsonFile, /GET_LUN
+      ;      printf, LUN, resultHashJSON
+      ;      free_lun, LUN
 
-       out_rast_list.(band) = result   ; Put the open virtual raster in the list of required rasters
+      out_rast_list.(band) = result   ; Put the open virtual raster in the list of required rasters
 
       ; If not using META, then save the multitemporal file to disk
 
@@ -293,7 +318,7 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
 
       ENDIF ELSE BEGIN
 
-       ; TO BE DONE WHEN PASSING TO Service pack 1 !!!!
+        ; TO BE DONE WHEN PASSING TO Service pack 1 !!!!
         ; if META, store the multitemporal file in JSON virtual format
         ; Don't close the fiules so that they are still there for Quality computation !
         ;        resultHash = result.dehydrate()
@@ -316,131 +341,131 @@ FUNCTION pr_build_inputs_v30, or_ts_folder, in_ts_folder, in_bands_or, in_bands_
   ; TODO: Parallelize this execution
   ;- --------------------------------------------------------- ;
 
-;  out_files_list.quality_file = path_create([in_ts_folder+path_sep()+strtrim(proc_year,2), $
-;    "Quality"+'_ts_input_'+yeardoys_required[0]+'_'+yeardoys_required[-1]+'.dat'])
-;  print, '# --- Building Quality File ---- '
-;
-;  ; Check if quality file already existing
-;  IF ((file_test(out_files_list.quality_file) EQ 0) OR (force_rebuild EQ 1)) THEN BEGIN
-;
-;    file_delete,out_files_list.quality_file,/ALLOW_NONEXISTENT
-;    file_delete,out_files_list.quality_file.remove(-3)+'.hdr',/ALLOW_NONEXISTENT
-;
-;    IF META EQ 0 THEN BEGIN
-;      ; open files needed to compute quality
-;      in_rely = e.openraster(out_files_list.rely_file)
-;      in_UI   = e.openraster(out_files_list.ui_file)
-;      in_blue = e.openraster(out_files_list.blue_file)
-;    ENDIF ELSE BEGIN ; OR use the already available METAs
-;      in_rely = out_rast_list.rely_file
-;      in_UI   = out_rast_list.ui_file
-;      in_blue = out_rast_list.blue_file
-;    ENDELSE
-;
-;    ; start computing quality
-;    tileIterator = in_rely.createtileiterator(MODE = 'spectral')
-;
-;    ; Initialize output quality raster
-;    IF META THEN interleave = 'bsq' ELSE interleave = 'bip'
-;    out_quality_file = enviraster(URI = out_files_list.quality_file, NROWS = in_rely.nrows, NCOLUMNS = in_rely.ncolumns, $
-;      NBANDS = in_rely.nbands, DATA_TYPE = in_rely.data_type, interleave = interleave)
-;
-;    FOREACH tile, tileIterator, line DO BEGIN ; cycle on lines ( = tiles)
-;
-;      IF line MOD 100 EQ 0 THEN print , line
-;      data_rely   = transpose(tile)
-;      data_ui     = (in_UI.getdata(SUB_RECT = tileIterator.current_subrect,BANDS = tileiterator.current_band))
-;      data_blue   = (in_blue.getdata(BANDS = tileiterator.current_band, SUB_RECT = tileIterator.current_subrect))
-;      out_quality = 1B*(data_rely EQ 1)+2B*(data_rely GT 1)+2B*(data_rely LT 0)
-;
-;      ;--- Update reliability on "intermediate" condition using usefulness index
-;      ones   = where(data_Rely EQ 1  , count_1)
-;      IF count_1 NE 0 THEN BEGIN
-;        ui_one      = data_ui[ones]
-;        quality_one = 0B*(ui_one LE 2) +1B*((ui_one GT 2) AND (ui_one LE 10)) + 2B*(ui_one GT 10)
-;        out_quality [ones] = quality_one
-;      ENDIF
-;
-;      ;--- Update quality on the basis of blue band (see the excel file in the "docs" folders for the coding)
-;      out_quality = 0B*((data_blue LE cloud_clear) AND (out_quality EQ 0)) + $
-;        1B*((out_quality EQ 1) AND (data_blue LE cloud_full))  + $
-;        1B*((out_quality EQ 0) AND (data_blue GT cloud_clear) AND (data_blue LE cloud_full)) + $
-;        2B*((out_quality EQ 2) OR  (data_blue GT cloud_full))
-;
-;      ; Save line on output file
-;      out_quality_file.setdata, out_quality, SUB_RECT=tileIterator.current_subrect, BANDS = tileiterator.current_band
-;
-;    ENDFOREACH
-;
-;    ; Add metadata to quality file and save it
-;    out_quality_file.metadata.additem, 'Wavelength', doys_required
-;    out_quality_file.metadata.additem, 'Band Names', "Quality" + "_" + yeardoys_required
-;
-;    out_quality_file.save
-;    IF META THEN out_rast_list.quality_file = envimetaspectralraster(out_quality_file, spatialref = result.spatialref) $
-;    ELSE out_rast_list.quality_file = envimetaspectralraster(out_quality_file, spatialref = in_rely.spatialref)
-;    out_quality_file.close
-;
-;    ; Cleanup
-;    in_rely.close
-;    in_ui.close
-;    in_blue.close
-;
-;
-;  ENDIF ELSE print, '# --- Quality File already existing ---- '
-;
-;  ; If opts.mapscape is 1 then look for existance of smoothed single bands and try building  the smoothed file
-;  ; Will probably remove this completely !
-;
-;  IF opts.mapscape EQ 100 THEN BEGIN
-;
-;    smooth_dirname = or_ts_folder+path_sep()+'VI_Smoothed'
-;    outname_smooth = smooth_dirname+path_sep()+strtrim(proc_year,2) + path_sep()+file_basename(out_filename) + $
-;      '_VI_smooth_'+yeardoys_required[0]+'_'+yeardoys_required[-1]+'.dat'
-;
-;    ; If multitemporal smoothed file doesn't exist, create it from single date files
-;    IF ((file_test(outname_smooth) EQ 0) OR (force_rebuild EQ 1)) THEN BEGIN
-;
-;      file_mkdir,smooth_dirname
-;      in_smoothfiles_required = strarr(n_elements(yeardoys_required))
-;      pattern = '*EVIsmooth*.dat'     ; Set the patern to search for one of theinputs (e.g., NDVI )
-;      in_files = file_search(smooth_dirname+path_sep()+pattern)   ; Find the file. Issue error if 0 or more than one file
-;      ; Create list of required smoothed single band files
-;      FOREACH yeardoy, yeardoys_required, index_file DO BEGIN
-;        result = where(strmatch(in_files, '*'+yeardoy+'*.dat'), count_files)
-;        IF count_files EQ 1 AND  strmid(in_file[result], 3, /REVERSE_OFFSET) EQ '.dat' THEN BEGIN
-;          in_smoothfiles_required [index_file] = in_file[result]
-;        ENDIF ELSE BEGIN
-;          print, 'One or more of the required EVI smoothed files is missing. Please check. Exiting ! '
-;          stop
-;        ENDELSE
-;      ENDFOREACH
-;
-;      ; Create multiband file
-;      FOREACH smoothfile, in_smoothfiles_required, file_ind  DO BEGIN
-;        IF file_ind EQ 0 THEN BEGIN
-;          raster_list = e.openraster(file)
-;        ENDIF ELSE BEGIN
-;          raster_list = [raster_list, e.openraster(file)]
-;        ENDELSE
-;        result = envimetaspectralraster(raster_list, spatialref = raster.spatialref)
-;        result.metadata.additem, 'Wavelength', doys_required
-;        result.metadata.updateitem, 'Band Names', "VI_Smooothed" + yeardoys_required
-;        IF file_test(outname_smooth) EQ 1 THEN BEGIN
-;          file_delete, outname_smooth
-;          file_delete, (outname_smooth.remove(-3)+'hdr')
-;        ENDIF
-;        file_mkdir, file_dirname(OUT_NAME)
-;        result.export, outname_smooth, 'envi', interleave = opts.interleave, data_ignore_value = no_data
-;
-;        ; Cleanup
-;        FOREACH item, raster_list DO item.close
-;        result.close
-;      ENDFOREACH
-;
-;    ENDIF ELSE print, '# ---' + in_bands_or[band] + ' Smoothed File already existing ---- '; End of check on file existence
-;
-;  ENDIF
+  ;  out_files_list.quality_file = path_create([in_ts_folder+path_sep()+strtrim(proc_year,2), $
+  ;    "Quality"+'_ts_input_'+yeardoys_required[0]+'_'+yeardoys_required[-1]+'.dat'])
+  ;  print, '# --- Building Quality File ---- '
+  ;
+  ;  ; Check if quality file already existing
+  ;  IF ((file_test(out_files_list.quality_file) EQ 0) OR (force_rebuild EQ 1)) THEN BEGIN
+  ;
+  ;    file_delete,out_files_list.quality_file,/ALLOW_NONEXISTENT
+  ;    file_delete,out_files_list.quality_file.remove(-3)+'.hdr',/ALLOW_NONEXISTENT
+  ;
+  ;    IF META EQ 0 THEN BEGIN
+  ;      ; open files needed to compute quality
+  ;      in_rely = e.openraster(out_files_list.rely_file)
+  ;      in_UI   = e.openraster(out_files_list.ui_file)
+  ;      in_blue = e.openraster(out_files_list.blue_file)
+  ;    ENDIF ELSE BEGIN ; OR use the already available METAs
+  ;      in_rely = out_rast_list.rely_file
+  ;      in_UI   = out_rast_list.ui_file
+  ;      in_blue = out_rast_list.blue_file
+  ;    ENDELSE
+  ;
+  ;    ; start computing quality
+  ;    tileIterator = in_rely.createtileiterator(MODE = 'spectral')
+  ;
+  ;    ; Initialize output quality raster
+  ;    IF META THEN interleave = 'bsq' ELSE interleave = 'bip'
+  ;    out_quality_file = enviraster(URI = out_files_list.quality_file, NROWS = in_rely.nrows, NCOLUMNS = in_rely.ncolumns, $
+  ;      NBANDS = in_rely.nbands, DATA_TYPE = in_rely.data_type, interleave = interleave)
+  ;
+  ;    FOREACH tile, tileIterator, line DO BEGIN ; cycle on lines ( = tiles)
+  ;
+  ;      IF line MOD 100 EQ 0 THEN print , line
+  ;      data_rely   = transpose(tile)
+  ;      data_ui     = (in_UI.getdata(SUB_RECT = tileIterator.current_subrect,BANDS = tileiterator.current_band))
+  ;      data_blue   = (in_blue.getdata(BANDS = tileiterator.current_band, SUB_RECT = tileIterator.current_subrect))
+  ;      out_quality = 1B*(data_rely EQ 1)+2B*(data_rely GT 1)+2B*(data_rely LT 0)
+  ;
+  ;      ;--- Update reliability on "intermediate" condition using usefulness index
+  ;      ones   = where(data_Rely EQ 1  , count_1)
+  ;      IF count_1 NE 0 THEN BEGIN
+  ;        ui_one      = data_ui[ones]
+  ;        quality_one = 0B*(ui_one LE 2) +1B*((ui_one GT 2) AND (ui_one LE 10)) + 2B*(ui_one GT 10)
+  ;        out_quality [ones] = quality_one
+  ;      ENDIF
+  ;
+  ;      ;--- Update quality on the basis of blue band (see the excel file in the "docs" folders for the coding)
+  ;      out_quality = 0B*((data_blue LE cloud_clear) AND (out_quality EQ 0)) + $
+  ;        1B*((out_quality EQ 1) AND (data_blue LE cloud_full))  + $
+  ;        1B*((out_quality EQ 0) AND (data_blue GT cloud_clear) AND (data_blue LE cloud_full)) + $
+  ;        2B*((out_quality EQ 2) OR  (data_blue GT cloud_full))
+  ;
+  ;      ; Save line on output file
+  ;      out_quality_file.setdata, out_quality, SUB_RECT=tileIterator.current_subrect, BANDS = tileiterator.current_band
+  ;
+  ;    ENDFOREACH
+  ;
+  ;    ; Add metadata to quality file and save it
+  ;    out_quality_file.metadata.additem, 'Wavelength', doys_required
+  ;    out_quality_file.metadata.additem, 'Band Names', "Quality" + "_" + yeardoys_required
+  ;
+  ;    out_quality_file.save
+  ;    IF META THEN out_rast_list.quality_file = envimetaspectralraster(out_quality_file, spatialref = result.spatialref) $
+  ;    ELSE out_rast_list.quality_file = envimetaspectralraster(out_quality_file, spatialref = in_rely.spatialref)
+  ;    out_quality_file.close
+  ;
+  ;    ; Cleanup
+  ;    in_rely.close
+  ;    in_ui.close
+  ;    in_blue.close
+  ;
+  ;
+  ;  ENDIF ELSE print, '# --- Quality File already existing ---- '
+  ;
+  ;  ; If opts.mapscape is 1 then look for existance of smoothed single bands and try building  the smoothed file
+  ;  ; Will probably remove this completely !
+  ;
+  ;  IF opts.mapscape EQ 100 THEN BEGIN
+  ;
+  ;    smooth_dirname = or_ts_folder+path_sep()+'VI_Smoothed'
+  ;    outname_smooth = smooth_dirname+path_sep()+strtrim(proc_year,2) + path_sep()+file_basename(out_filename) + $
+  ;      '_VI_smooth_'+yeardoys_required[0]+'_'+yeardoys_required[-1]+'.dat'
+  ;
+  ;    ; If multitemporal smoothed file doesn't exist, create it from single date files
+  ;    IF ((file_test(outname_smooth) EQ 0) OR (force_rebuild EQ 1)) THEN BEGIN
+  ;
+  ;      file_mkdir,smooth_dirname
+  ;      in_smoothfiles_required = strarr(n_elements(yeardoys_required))
+  ;      pattern = '*EVIsmooth*.dat'     ; Set the patern to search for one of theinputs (e.g., NDVI )
+  ;      in_files = file_search(smooth_dirname+path_sep()+pattern)   ; Find the file. Issue error if 0 or more than one file
+  ;      ; Create list of required smoothed single band files
+  ;      FOREACH yeardoy, yeardoys_required, index_file DO BEGIN
+  ;        result = where(strmatch(in_files, '*'+yeardoy+'*.dat'), count_files)
+  ;        IF count_files EQ 1 AND  strmid(in_file[result], 3, /REVERSE_OFFSET) EQ '.dat' THEN BEGIN
+  ;          in_smoothfiles_required [index_file] = in_file[result]
+  ;        ENDIF ELSE BEGIN
+  ;          print, 'One or more of the required EVI smoothed files is missing. Please check. Exiting ! '
+  ;          stop
+  ;        ENDELSE
+  ;      ENDFOREACH
+  ;
+  ;      ; Create multiband file
+  ;      FOREACH smoothfile, in_smoothfiles_required, file_ind  DO BEGIN
+  ;        IF file_ind EQ 0 THEN BEGIN
+  ;          raster_list = e.openraster(file)
+  ;        ENDIF ELSE BEGIN
+  ;          raster_list = [raster_list, e.openraster(file)]
+  ;        ENDELSE
+  ;        result = envimetaspectralraster(raster_list, spatialref = raster.spatialref)
+  ;        result.metadata.additem, 'Wavelength', doys_required
+  ;        result.metadata.updateitem, 'Band Names', "VI_Smooothed" + yeardoys_required
+  ;        IF file_test(outname_smooth) EQ 1 THEN BEGIN
+  ;          file_delete, outname_smooth
+  ;          file_delete, (outname_smooth.remove(-3)+'hdr')
+  ;        ENDIF
+  ;        file_mkdir, file_dirname(OUT_NAME)
+  ;        result.export, outname_smooth, 'envi', interleave = opts.interleave, data_ignore_value = no_data
+  ;
+  ;        ; Cleanup
+  ;        FOREACH item, raster_list DO item.close
+  ;        result.close
+  ;      ENDFOREACH
+  ;
+  ;    ENDIF ELSE print, '# ---' + in_bands_or[band] + ' Smoothed File already existing ---- '; End of check on file existence
+  ;
+  ;  ENDIF
 
   ; Cleanup to close all open files
 

@@ -28,7 +28,7 @@ FUNCTION pr_process_pix_v30, opts, smooth_pix, NDFI_pix, lst_pix, doy_pix, nb, d
 
   ; INitialize outputs arrays to -999
 
-  out_nrice    = (out_maxdoy = (out_mindoy = (out_sosdoy = (out_eosdoy = (out_int = intarr(opts.n_sel_season) - 999)))))
+  out_nrice    = (out_maxdoy = (out_mindoy = (out_sosdoy = (out_eosdoy = (out_int = (out_int_veg = intarr(opts.n_sel_season) - 999)))))) 
   out_halfhead = (out_maxvi  = (out_minvi  = (out_max_min_delta = (out_eos_min_delta = intarr(opts.n_sel_season) - 999))))
 
   ;- ---------------------------------------------------------------- -
@@ -250,7 +250,8 @@ FUNCTION pr_process_pix_v30, opts, smooth_pix, NDFI_pix, lst_pix, doy_pix, nb, d
               ;- Additional phenometrics: max and min vi, integral, lenghts
               ;- --------------------------------------------------------- ;
 
-              out_int [ind_season]          = total(smooth_pix[pos_min:pos_max])/10  ; integral of EVI between sow and max
+              out_int [ind_season]          = total(smooth_pix[pos_min:(min(EoS) + pos_max)])/10  ; integral of EVI between sow and max 
+              out_int_veg [ind_season]      = total(smooth_pix[pos_min:pos_max])/10  ; integral of EVI between sow and max
               out_maxvi[ind_season]         = val_max     ; Vi value at MAX
               out_minvi[ind_season]         = val_min     ; Vi value at Min
               out_max_min_delta[ind_season] = (out_maxdoy[ind_season] - out_mindoy [ind_season])  ; n° of days between max and min
@@ -277,6 +278,7 @@ FUNCTION pr_process_pix_v30, opts, smooth_pix, NDFI_pix, lst_pix, doy_pix, nb, d
               out_maxdoy [where_failed]       = -999
               out_eosdoy [where_failed]       = -999
               out_int    [where_failed]       = -999
+              out_int_veg[where_failed]       = -999 
               out_maxvi  [where_failed]       = -999
               out_minvi  [where_failed]       = -999
               out_max_min_delta[where_failed] = -999
@@ -329,6 +331,7 @@ FUNCTION pr_process_pix_v30, opts, smooth_pix, NDFI_pix, lst_pix, doy_pix, nb, d
     out_halfhead      : out_halfhead  , $
     out_eosdoy        : out_eosdoy    , $
     out_int           : out_int       , $
+    out_int_veg       : out_int_veg   , $ 
     out_maxvi         : out_maxvi     , $
     out_minvi         : out_minvi     , $
     out_max_min_delta : out_max_min_delta, $

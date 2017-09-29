@@ -90,7 +90,7 @@ FUNCTION pr_process_v30_parline, opts, lines, data_lc, data_VI, data_QA, data_DO
   FOR line = 0, n_elements(lines)-1 DO BEGIN
 
     IF opts.META EQ 1 THEN lc_line = data_lc [*,line] ELSE lc_line = data_lc [*,line]
-    lc_ok   = where(lc_line EQ 1, count_lc_ok, complement = lc_bad)   ; Find Pixels in the line with "good" lc values
+    lc_ok   = where(lc_line NE 0, count_lc_ok, complement = lc_bad)   ; Find Pixels in the line with "good" lc values
 
     IF count_lc_ok GT 0 THEN BEGIN ; check on "land cover" mask. If no pixel in the line are "good", skip the line
 

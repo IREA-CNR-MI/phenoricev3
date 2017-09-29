@@ -1,7 +1,7 @@
-E:\nr_working\shared\PhenoRice\Processing\Iran\Inputs\AOI_3
-E:\nr_working\shared\PhenoRice\Processing\Iran\Outputs\AOI_3
-E:\nr_working\shared\PhenoRice\Processing\Iran\Inputs\Ancillary/Mask_AOI_3.dat
-E:\nr_working\shared\PhenoRice\Processing\Iran\Inputs\AOI_3\Time_Series
+/home/lbusetto/nas-s4a/nr_working/shared/PhenoRice/Processing/Iran/Inputs/AOI_2
+/home/lbusetto/nas-s4a/nr_working/shared/PhenoRice/Processing/Iran/Outputs/AOI_2
+/home/lbusetto/nas-s4a/nr_working/shared/PhenoRice/Processing/Iran/Inputs/AOI_2/VI_16Days_250m_v5/EVI/MOD13Q1_EVI_2010_001.dat
+/home/lbusetto/nas-s4a/nr_working/shared/PhenoRice/Processing/Iran/Inputs/AOI_2/Time_Series
 On
 1
 31
@@ -31,7 +31,7 @@ On
 274
 365
 2010
-2015
+2016
 On
 5500
 On
@@ -51,7 +51,7 @@ On
 15
 On
 1
-0.5
+0.6
 "C:/Program Files/Exelis/IDL82/bin/bin.x86_64/idl.exe"
 "S:/source_code/IDL/Applications/Phenorice_v2/Phenorice_v22/source/"
 15

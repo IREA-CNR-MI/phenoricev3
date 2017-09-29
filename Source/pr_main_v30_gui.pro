@@ -25,7 +25,7 @@
   ; Set some options for test processing
   ;- --------------------------------------------------------- ;
   
-  debug          = 0          ; Specify if using "standard" processing for debug purposes.
+  debug          = 1          ; Specify if using "standard" processing for debug purposes.
                               ; If set to 1, parallel processing is not used so that the debug is easier
   resizeonmask   = 1
   test_data      = 0        ; Leads to using default input data and parameters (for testing purposes)
@@ -48,8 +48,8 @@
   ; Set General processing options: number of cpus, overwriting, reporocessing ,etc.
   ;- --------------------------------------------------------- ;
 
-  ncpus          = !CPU.hw_ncpu - 1 ; Find number of available cores - KEEP ONE FREE TO AVOID OVERLOAD !!!!!
-;  ncpus          = 10 ; Find number of available cores - KEEP ONE FREE TO AVOID OVERLOAD !!!!!
+;  ncpus          = !CPU.hw_ncpu - 1 ; Find number of available cores - KEEP ONE FREE TO AVOID OVERLOAD !!!!!
+  ncpus          = 10 ; Find number of available cores - KEEP ONE FREE TO AVOID OVERLOAD !!!!!
   method         = 'parallel-line'; Processing method *"parallel-line" (faster - difficult to debug ! ))
   chunksize      = 50             ; Number of lines to assign to each core: the higher, the fastest, but the
   ; highest also the memory load !
@@ -57,7 +57,7 @@
   META           = 1             ; Specify if saving input multitemporal files or just use "virtual" in-memory files
   ; referring to the input single-data - avoids creating huge "physical" input files !
 
-  force_rebuild  = 1             ; Flag. if set to 1 the input files are rebuilt (overwritten) even if already existing
+  force_rebuild  = 0             ; Flag. if set to 1 the input files are rebuilt (overwritten) even if already existing
   force_resmooth = 1             ; Flag. if set to 1 the smoothed file is rebuilt (overwritten) even if already existing
   overwrite_out  = 1             ; If = 0, then trying to overwrite existing outputs is NOT POSSIBLE
   fullout        = 1             ; Specify if also building an output file containing all bands - obsolete !
@@ -70,7 +70,7 @@
   ; Used in the phase of building the "short" time series using pr_build_inputs
   ; The first item indicate whether to use EVI or NDVI -> Change: Removed NDII7 since it's useless !
 
-  in_bands_or = ['EVI','NDFI','b3_Blue','Rely','UI','DOY','LST']
+  in_bands_or = ['EVI','NDFI','b3_Blue','Rely','UI','DOY','LST_Day_1km']
 
   ; Folders where MODIStsp stores the different parameters - do not touch !
 
@@ -79,7 +79,7 @@
 
   ; Nodata values used in MODIStsp for the different parameters
 
-  nodatas_or = [32767,32767,32767,32767,255,255,32767,32767]
+  nodatas_or = [32767,32767,32767,32767,255,255,32767]
 
   ; If mapscape inputs are used, NODATA values for Surf_Temp are different ! To be changed in mapscape !!
   IF mapscape EQ 1 THEN  nodatas_or = [-3000,32767,-1000,-1,255,255,-1,0]
@@ -165,6 +165,7 @@
       hh             : 1, $   ; DOY of flowering (midpoint EVI Z 90th perc.)
       eos            : 1, $   ; EOS (decrease 50 %)
       int            : 1, $   ; Cumulated EVI between min and flowering
+      int_veg        : 1, $   ; Cumulated EVI between min and flowering 
       maxvi          : 0, $   ; EVI at maximum
       minvi          : 0, $   ; EVI at minimum
       maxmin         : 1, $   ; Length of vegetative season
@@ -347,6 +348,7 @@
       hh             : 1, $   ; DOY of flowering (midpoint EVI Z 90th perc.)
       eos            : 1, $   ; EOS (decrease 50 %)
       int            : 1, $   ; Cumulated EVI between min and flowering
+      int_veg        : 1, $
       maxvi          : 0, $   ; EVI at maximum
       minvi          : 0, $   ; EVI at minimum
       maxmin         : 1, $   ; Length of vegetative season

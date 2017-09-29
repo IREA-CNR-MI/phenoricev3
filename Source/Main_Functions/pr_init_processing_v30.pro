@@ -124,7 +124,7 @@ FUNCTION pr_init_processing_v30, in_files, opts, out_rast_list, ind_year
 
   nb_out = opts.n_rice + n_elements(where(opts.sel_seasons EQ 1)) * $
     (opts.max + opts.sow + opts.hh + opts.eos + $
-    opts.int + opts.maxvi + opts.minvi + opts.maxmin + opts.eosmin)
+    opts.int + opts.int_veg + opts.maxvi + opts.minvi + opts.maxmin + opts.eosmin) 
 
   out_filename = in_files.out_filename
 
@@ -205,17 +205,17 @@ FUNCTION pr_init_processing_v30, in_files, opts, out_rast_list, ind_year
   IF (opts.method EQ "parallel-line") THEN BEGIN
 
     ; Build the "chunk ranges" - each chunk is formed by n_cpus*chunk_size lines
-    IF (nrows GT opts.chunksize*opts.ncpus) THEN BEGIN
+    IF (nrows GT opts.chunksize * opts.ncpus) THEN BEGIN
 
-      chunk_ranges = intarr(nrows/(opts.chunksize*opts.ncpus),2)
+      chunk_ranges = intarr(nrows / (opts.chunksize * opts.ncpus), 2)
       n_chunks     = n_elements(chunk_ranges[*,1])
-      FOR chunk = 0, n_chunks-1 DO chunk_ranges[chunk,*] = [nrows/n_chunks*chunk,nrows/n_chunks*(chunk+1)-1]   ; Divide work among line chunks
-      chunk_ranges[n_chunks-1,1] = nrows-1  ; Last chunk gets the last lines
+      FOR chunk = 0, n_chunks-1 DO chunk_ranges[chunk,*] = [nrows / n_chunks * chunk, nrows / n_chunks * (chunk + 1) -1]   ; Divide work among line chunks
+      chunk_ranges[n_chunks - 1, 1] = nrows - 1  ; Last chunk gets the last lines
     
     ENDIF ELSE BEGIN
 
       n_chunks = 1
-      chunk_ranges = [0,nrows-1]
+      chunk_ranges = [0, nrows - 1]
 
     ENDELSE
 
@@ -463,7 +463,8 @@ FUNCTION pr_init_processing_v30, in_files, opts, out_rast_list, ind_year
     'SOW', 'Doy of Sowing (SOS)', $
     'HH', 'Doy of Heading (FOS)', $
     'EOS', 'Doy of Harvest (EOS)', $
-    'INT', 'Cumulated EVI', $
+    'INT', 'Cumulated EVI- SOW to EOS', $ 
+    'INT_VEG', 'Cumulated EVI - SOW to MAX', $
     'MAXVI', 'Maximum EVI', $
     'MINVI', 'Minimum EVI', $
     'MAXMIN', 'Length of Vegetative Season (SOS to FOS)', $
